@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { InferInsertModel, relations, sql } from "drizzle-orm";
 import {
   index,
   integer,
@@ -117,9 +117,9 @@ export const verificationTokens = createTable(
 );
 
 export const property = createTable("property", {
-  id: serial("id"),
+  id: serial("id").primaryKey(),
   flats: integer("flats").notNull(),
-  commercial: integer("commercial"),
+  commercial: integer("commercial").notNull(),
   tenants: integer("tenants"),
   heatingSystem: varchar("heatingSystem", { length: 50 }).notNull(),
   capacity: integer("capacity"),
@@ -130,7 +130,7 @@ export const property = createTable("property", {
 });
 
 export const tenants = createTable("tenants", {
-  id: serial("id"),
+  id: serial("id").primaryKey(),
   firstName: varchar("firstname", { length: 30 }).notNull(),
   lastName: varchar("firstname", { length: 30 }).notNull(),
   coldRent: integer("coldRent").notNull(),
@@ -139,15 +139,16 @@ export const tenants = createTable("tenants", {
   propertyId: varchar("propertyId", { length: 255 }).notNull(),
 });
 
+export const flatTypeEnum = pgEnum("flat_type", ["normal", "commercial"]);
+
 export const flats = createTable("flats", {
-  id: serial("id"),
-  size: integer("size").notNull(),
+  id: serial("id").primaryKey(),
+  type: flatTypeEnum("type").notNull(),
+  size: integer("size"),
   number: integer("number"),
   propertyId: integer("propertyId").notNull(),
-  activeTenantId: integer("tenantId").notNull(),
+  activeTenantId: integer("tenantId"),
 });
-
-export const flatTypeEnum = pgEnum("flat_type", ["normal", "commercial"]);
 
 export const propertyRelations = relations(property, ({ many }) => ({
   flats: many(flats),
@@ -173,3 +174,7 @@ export const tenantsRelation = relations(tenants, ({ one }) => ({
     references: [property.id],
   }),
 }));
+
+export type Property = InferInsertModel<typeof property>;
+export type Flat = InferInsertModel<typeof flats>;
+export type Tenant = InferInsertModel<typeof tenants>;
