@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMutation } from "@tanstack/react-query";
-import createProperty from "@/server/actions/property";
 import { toast } from "sonner";
 
 export default function NewPropertyForm() {
@@ -47,18 +46,8 @@ export default function NewPropertyForm() {
     heatpump: "Wärmepumpe",
   };
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: createProperty,
-    onSuccess: (res) => {
-      if (res?.message === "error") {
-        return toast.error("Das hat nicht geklappt");
-      }
-      return toast.success("Das hat geklappt.");
-    },
-  });
-
   function onSubmit(data: z.infer<typeof newPropertySchema>) {
-    mutate(data);
+    console.log(data);
   }
 
   return (
@@ -195,9 +184,7 @@ export default function NewPropertyForm() {
             </div>
           )}
         />
-        <Button type="submit" disabled={isPending}>
-          Anlegen
-        </Button>
+        <Button type="submit">Anlegen</Button>
       </form>
     </Form>
   );

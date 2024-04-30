@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { auth } from "auth";
+import { getServerAuthSession } from "@/server/auth";
 
 const cards: {
   name: string;
@@ -54,7 +54,7 @@ const cards: {
 ];
 
 export default async function Adminpage() {
-  const session = await auth();
+  const session = await getServerAuthSession();
   if (!session) return redirect("/sign-in");
   return <Dashboard />;
 }
