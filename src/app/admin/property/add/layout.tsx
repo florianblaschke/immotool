@@ -1,5 +1,6 @@
 import { Separator } from "@/components/ui/separator";
 import { SidebarNav } from "./SidebarNav";
+import StatusProvider from "@/components/providers/StatusProvider";
 
 const sidebarNavItems = [
   {
@@ -30,7 +31,7 @@ interface SettingsLayoutProps {
 
 export default function SettingsLayout({ children }: SettingsLayoutProps) {
   return (
-    <>
+    <StatusProvider>
       <div className="m-4 block rounded border p-6 pb-16 md:hidden">
         <div className="space-y-0.5">
           <h2 className="text-2xl font-bold tracking-tight">
@@ -65,6 +66,6 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
           <div className="flex-1 lg:max-w-2xl">{children}</div>
         </div>
       </div>
-    </>
+    </StatusProvider>
   );
 }

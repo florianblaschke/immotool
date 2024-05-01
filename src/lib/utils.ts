@@ -8,9 +8,9 @@ export function cn(...inputs: ClassValue[]) {
 export class ActionError extends Error {
   constructor(
     message: string,
-    options: { cause: 500 | 400 | 404 | 401 | 403 | 409 | 422 | 429 | 503 },
+    options: { code: 500 | 400 | 404 | 401 | 403 | 409 | 422 | 429 | 503 },
   ) {
     super(message);
-    (this.name = "ActionError"), (this.cause = options.cause);
+    (this.name = "ActionError"), (this.cause = options.code);
   }
 }

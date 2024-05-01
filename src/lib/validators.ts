@@ -17,18 +17,8 @@ export const newPropertySchema = z.object({
     .refine((e) => validHeatingSystems.some((sys) => sys === e)),
   capacity: z.coerce.number().min(0).optional(),
 });
-// .superRefine(({ heatingSystem }, ctx) => {
-//   if (heatingSystem === "oil") {
-//     ctx.addIssue({
-//       code: "too_small",
-//       message: "Capacity is required",
-//       inclusive: true,
-//       minimum: 500,
-//       type: "number",
-//     });
-//   }
-// });
-//Needs rework. Does not work as intended
+
+export type NewPropertyType = z.infer<typeof newPropertySchema>;
 
 export const expensesSchema = z.object({
   waste: z.coerce.number(),
@@ -36,3 +26,5 @@ export const expensesSchema = z.object({
   basicFee: z.coerce.number(),
   sewage: z.coerce.number(),
 });
+
+export type ExpensesType = z.infer<typeof expensesSchema>;

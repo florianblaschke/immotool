@@ -13,7 +13,7 @@ export default async function createProperty(
 ) {
   try {
     const session = getServerAuthSession();
-    if (!session) throw new ActionError("unauthorized", { cause: 401 });
+    if (!session) throw new ActionError("unauthorized", { code: 401 });
 
     const validData = newPropertySchema.parse(data);
 
@@ -25,7 +25,7 @@ export default async function createProperty(
         ),
     });
     if (existingProptery)
-      throw new ActionError("property exists already", { cause: 500 });
+      throw new ActionError("property exists already", { code: 500 });
 
     await db.transaction(async (tx) => {
       const [newProperty] = await tx
