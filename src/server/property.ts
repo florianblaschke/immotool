@@ -1,19 +1,32 @@
 "use server";
 
-import { getServerAuthSession } from "./auth";
+import { ActionError } from "@/lib/utils";
 import { newPropertySchema } from "@/lib/validators";
-import { type z } from "zod";
+import { and } from "drizzle-orm";
+import { number, ZodError, type z } from "zod";
+import { getServerAuthSession } from "./auth";
 import { db } from "./db";
 import { Flat, flats, property } from "./db/schema";
 
 export default async function createProperty(
   data: z.infer<typeof newPropertySchema>,
 ) {
-  const session = getServerAuthSession();
-  if (!session) throw Error();
-
   try {
+    const session = getServerAuthSession();
+    if (!session) throw new ActionError("unauthorized", { cause: 401 });
+
     const validData = newPropertySchema.parse(data);
+
+    const existingProptery = await db.query.property.findFirst({
+      where: (property, { eq }) =>
+        and(
+          eq(property.street, validData.street),
+          eq(property.streetNumber, validData.streetNumber),
+        ),
+    });
+    if (existingProptery)
+      throw new ActionError("property exists already", { cause: 500 });
+
     await db.transaction(async (tx) => {
       const [newProperty] = await tx
         .insert(property)
@@ -24,19 +37,45 @@ export default async function createProperty(
 
       const normalFlats: Flat[] = Array.from({
         length: newProperty.flats,
-      }).map(() => ({ propertyId: newProperty.id, type: "normal" }));
+      }).map((_, i) => ({
+        propertyId: newProperty.id,
+        type: "normal",
+        number: i + 1,
+      }));
 
       const commercialFlats: Flat[] = Array.from({
         length: newProperty.commercial,
-      }).map(() => ({ type: "commercial", propertyId: newProperty.id }));
+      }).map((_, i) => ({
+        type: "commercial",
+        propertyId: newProperty.id,
+        number: i + newProperty.flats + 1,
+      }));
 
       await tx.insert(flats).values(commercialFlats);
       await tx.insert(flats).values(normalFlats);
     });
   } catch (error) {
+    if (error instanceof ActionError) {
+      if (error.cause === 401)
+        return {
+          message: "error",
+          error: "Du bist nicht berechtig für diese Aktion.",
+        };
+      if (error.cause === 500)
+        return {
+          message: "error",
+          error: "Die Wohneinheit existiert bereits.",
+        };
+    }
     if (error instanceof Error) {
       console.error(error);
       return { message: "error", error: error.message };
+    }
+    if (error instanceof ZodError) {
+      return {
+        message: "error",
+        error: "Deine eingegebene Daten sind ungültig.",
+      };
     }
   }
 }

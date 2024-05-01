@@ -51,22 +51,19 @@ export default function NewPropertyForm() {
     mutationFn: createProperty,
     onSuccess: (res) => {
       if (res?.message === "error") {
-        return toast.error("Das hat nicht geklappt");
+        return toast.error("Das hat nicht geklappt", {
+          description: res.error,
+        });
       }
       return toast.success("Das hat geklappt");
     },
   });
 
-  function onSubmit(data: z.infer<typeof newPropertySchema>) {
-    console.log(data);
-    mutate(data);
-  }
-
   return (
     <Form {...form}>
       <form
         className="flex w-full max-w-sm flex-col gap-4"
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={form.handleSubmit((data) => mutate(data))}
       >
         <div className="grid grid-cols-5 gap-x-4 gap-y-2">
           <FormField
