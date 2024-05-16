@@ -120,7 +120,6 @@ export const property = createTable("property", {
   id: serial("id").primaryKey(),
   flats: integer("flats").notNull(),
   commercial: integer("commercial").notNull(),
-  tenants: integer("tenants"),
   heatingSystem: varchar("heatingSystem", { length: 50 }).notNull(),
   capacity: integer("capacity"),
   street: varchar("street", { length: 255 }),

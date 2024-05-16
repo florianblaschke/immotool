@@ -3,7 +3,7 @@
 import { ActionError } from "@/lib/utils";
 import { newPropertySchema } from "@/lib/validators";
 import { and } from "drizzle-orm";
-import { number, ZodError, type z } from "zod";
+import { ZodError, type z } from "zod";
 import { getServerAuthSession } from "./auth";
 import { db } from "./db";
 import { Flat, flats, property } from "./db/schema";
@@ -12,7 +12,7 @@ export default async function createProperty(
   data: z.infer<typeof newPropertySchema>,
 ) {
   try {
-    const session = getServerAuthSession();
+    const session = await getServerAuthSession();
     if (!session) throw new ActionError("unauthorized", { code: 401 });
 
     const validData = newPropertySchema.parse(data);
@@ -27,6 +27,8 @@ export default async function createProperty(
     if (existingProptery)
       throw new ActionError("property exists already", { code: 500 });
 
+    let propertyId: number = 0;
+
     await db.transaction(async (tx) => {
       const [newProperty] = await tx
         .insert(property)
@@ -34,6 +36,8 @@ export default async function createProperty(
         .returning();
 
       if (!newProperty) throw Error();
+
+      propertyId = newProperty.id;
 
       const normalFlats: Flat[] = Array.from({
         length: newProperty.flats,
@@ -54,6 +58,7 @@ export default async function createProperty(
       await tx.insert(flats).values(commercialFlats);
       await tx.insert(flats).values(normalFlats);
     });
+    return { message: "success", data: propertyId };
   } catch (error) {
     if (error instanceof ActionError) {
       if (error.cause === 401)
@@ -76,6 +81,30 @@ export default async function createProperty(
         message: "error",
         error: "Deine eingegebene Daten sind ungültig.",
       };
+    }
+  }
+}
+
+export async function getPropertyById(id: number) {
+  try {
+    const session = await getServerAuthSession();
+    if (!session) throw new ActionError("unauthorized", { code: 401 });
+
+    const property = await db.query.property.findFirst({
+      where: (property, { eq }) => eq(property.id, id),
+      with: { flats: true },
+    });
+    return property;
+  } catch (error) {
+    if (error instanceof Error)
+      return { message: "error", error: error.message };
+    if (error instanceof ActionError) {
+      if (error.cause === 401) {
+        return {
+          message: "error",
+          error: "Du bist nicht berechtigt für diese Aktion.",
+        };
+      }
     }
   }
 }

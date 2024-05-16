@@ -1,27 +1,35 @@
+"use client";
+
+import StatusProvider from "@/components/providers/StatusProvider";
 import { Separator } from "@/components/ui/separator";
 import { SidebarNav } from "./SidebarNav";
-import StatusProvider from "@/components/providers/StatusProvider";
+import { useState } from "react";
 
 const sidebarNavItems = [
   {
     title: "Grunddaten",
     href: "/admin/property/add",
+    hidden: false,
   },
   {
     title: "Grundbesitzabgaben",
     href: "/admin/property/add/expenses",
+    hidden: true,
   },
   {
     title: "Wohnungen",
     href: "/admin/property/add/flats",
+    hidden: true,
   },
   {
     title: "Zähler",
     href: "/admin/property/add/counters",
+    hidden: true,
   },
   {
     title: "Sonstiges",
     href: "/admin/property/add/notes",
+    hidden: true,
   },
 ];
 
@@ -30,8 +38,10 @@ interface SettingsLayoutProps {
 }
 
 export default function SettingsLayout({ children }: SettingsLayoutProps) {
+  const [propertyId, setPropertyId] = useState<number>(0);
+  const [status, setStatus] = useState<boolean>(false);
   return (
-    <StatusProvider>
+    <StatusProvider values={{ status, setStatus, propertyId, setPropertyId }}>
       <div className="m-4 block rounded border p-6 pb-16 md:hidden">
         <div className="space-y-0.5">
           <h2 className="text-2xl font-bold tracking-tight">

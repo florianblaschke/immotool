@@ -5,16 +5,19 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { useStatus } from "@/components/providers/StatusProvider";
 
 interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
   items: {
     href: string;
     title: string;
+    hidden: boolean;
   }[];
 }
 
 export function SidebarNav({ className, items, ...props }: SidebarNavProps) {
   const pathname = usePathname();
+  const { status } = useStatus();
 
   return (
     <nav
@@ -33,6 +36,7 @@ export function SidebarNav({ className, items, ...props }: SidebarNavProps) {
             pathname === item.href
               ? "bg-muted hover:bg-muted"
               : "hover:bg-transparent hover:underline",
+            item.hidden && status !== true && "hidden",
             "justify-start",
           )}
         >

@@ -1,27 +1,25 @@
 "use client";
 
-import { ExpensesType, NewPropertyType } from "@/lib/validators";
-import { createContext, useContext, useState } from "react";
+import { createContext, Dispatch, SetStateAction, useContext } from "react";
 
 type Values = {
   status: boolean;
-  property?: NewPropertyType;
-  expenses?: ExpensesType;
+  setStatus: Dispatch<SetStateAction<boolean>>;
+  propertyId: number;
+  setPropertyId: Dispatch<SetStateAction<number>>;
 };
 
-const StatusContext = createContext<Values>({ status: false });
-export const useStatus = () => useContext(StatusContext);
-
+const StatusContext = createContext<Values | null>(null);
 export default function StatusProvider({
   children,
+  values,
 }: {
   children: React.ReactNode;
+  values: Values;
 }) {
-  const [status, setStatus] = useState(false);
-  const [values, setValues] = useState();
   return (
-    <StatusContext.Provider value={{ status }}>
-      {children}
-    </StatusContext.Provider>
+    <StatusContext.Provider value={values}>{children}</StatusContext.Provider>
   );
 }
+
+export const useStatus = () => useContext(StatusContext);

@@ -48,6 +48,8 @@ export default function NewPropertyForm() {
     heatpump: "Wärmepumpe",
   };
 
+  const values = useStatus();
+
   const { mutate, isPending } = useMutation({
     mutationFn: createProperty,
     onSuccess: (res) => {
@@ -55,6 +57,10 @@ export default function NewPropertyForm() {
         return toast.error("Das hat nicht geklappt", {
           description: res.error,
         });
+      }
+      if (values) {
+        values.setStatus(true);
+        res?.data ? values.setPropertyId(res?.data) : null;
       }
       return toast.success("Das hat geklappt");
     },
