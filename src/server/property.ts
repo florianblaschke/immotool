@@ -40,7 +40,7 @@ export default async function createProperty(
       propertyId = newProperty.id;
 
       const normalFlats: Flat[] = Array.from({
-        length: newProperty.flats,
+        length: newProperty.units,
       }).map((_, i) => ({
         propertyId: newProperty.id,
         type: "normal",
@@ -52,7 +52,7 @@ export default async function createProperty(
       }).map((_, i) => ({
         type: "commercial",
         propertyId: newProperty.id,
-        number: i + newProperty.flats + 1,
+        number: i + newProperty.units + 1,
       }));
 
       await tx.insert(flats).values(commercialFlats);
@@ -92,9 +92,9 @@ export async function getPropertyById(id: number) {
 
     const property = await db.query.property.findFirst({
       where: (property, { eq }) => eq(property.id, id),
-      with: { flats: true },
+      with: { flats: true, tenants: true },
     });
-    return property;
+    return { message: "success", body: property };
   } catch (error) {
     if (error instanceof Error)
       return { message: "error", error: error.message };

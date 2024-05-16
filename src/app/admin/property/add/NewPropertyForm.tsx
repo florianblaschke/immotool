@@ -32,7 +32,7 @@ export default function NewPropertyForm() {
       capacity: 0,
       city: "",
       commercial: 0,
-      flats: 0,
+      units: 0,
       heatingSystem: "",
       street: "",
       streetNumber: "",
@@ -47,7 +47,6 @@ export default function NewPropertyForm() {
     gas: "Gas",
     heatpump: "Wärmepumpe",
   };
-
   const values = useStatus();
 
   const { mutate, isPending } = useMutation({
@@ -129,7 +128,7 @@ export default function NewPropertyForm() {
         <div className="grid grid-cols-2 gap-x-4">
           <FormField
             control={form.control}
-            name="flats"
+            name="units"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Wohneinheiten</FormLabel>

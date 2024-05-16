@@ -1,5 +1,6 @@
 import { InferInsertModel, relations, sql } from "drizzle-orm";
 import {
+  date,
   index,
   integer,
   pgEnum,
@@ -118,7 +119,7 @@ export const verificationTokens = createTable(
 
 export const property = createTable("property", {
   id: serial("id").primaryKey(),
-  flats: integer("flats").notNull(),
+  units: integer("units").notNull(),
   commercial: integer("commercial").notNull(),
   heatingSystem: varchar("heatingSystem", { length: 50 }).notNull(),
   capacity: integer("capacity"),
@@ -130,10 +131,15 @@ export const property = createTable("property", {
 
 export const tenants = createTable("tenants", {
   id: serial("id").primaryKey(),
-  firstName: varchar("firstname", { length: 30 }).notNull(),
-  lastName: varchar("firstname", { length: 30 }).notNull(),
+  firstName: varchar("firstName", { length: 30 }).notNull(),
+  lastName: varchar("lastName", { length: 30 }).notNull(),
   coldRent: integer("coldRent").notNull(),
   utilityRent: integer("utilityRent").notNull(),
+  phone: varchar("phone", { length: 255 }),
+  mobile: varchar("mobile", { length: 255 }),
+  email: varchar("email", { length: 255 }),
+  movedIn: date("movedIn"),
+  movedOut: date("movedOut"),
   flatId: varchar("flatId", { length: 255 }).notNull(),
   propertyId: varchar("propertyId", { length: 255 }).notNull(),
 });
@@ -144,7 +150,7 @@ export const flats = createTable("flats", {
   id: serial("id").primaryKey(),
   type: flatTypeEnum("type").notNull(),
   size: integer("size"),
-  number: integer("number"),
+  number: integer("number").notNull(),
   propertyId: integer("propertyId").notNull(),
   activeTenantId: integer("tenantId"),
 });
