@@ -31,13 +31,15 @@ export type FlatType = z.infer<typeof flatSchema>;
 export const tenantSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  coldrent: z.coerce.number().min(1),
+  coldRent: z.coerce.number().min(1),
   utilityRent: z.coerce.number().min(1),
   movedIn: z.date().optional(),
   movedOut: z.date().optional(),
   phone: z.string().optional(),
   mobile: z.string().optional(),
   email: z.string().email(),
+  flatId: z.coerce.number(),
+  propertyId: z.coerce.number(),
 });
 
 export const expensesSchema = z.object({

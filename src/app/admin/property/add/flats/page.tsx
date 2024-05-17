@@ -8,16 +8,14 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
-  DrawerTrigger,
   DrawerTitle,
+  DrawerTrigger,
 } from "@/components/ui/drawer";
 import {
   Form,
@@ -43,13 +41,15 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { flatSchema, type tenantSchema } from "@/lib/validators";
-import type { Flat, Tenant } from "@/server/db/schema";
+import type { Flat } from "@/server/db/schema";
 import { getPropertyById } from "@/server/property";
+import { createTenant, getAllTenants } from "@/server/tenants";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { type z } from "zod";
 
 export default function FlatsPage() {
@@ -57,8 +57,8 @@ export default function FlatsPage() {
   const values = useStatus();
 
   const { data, isLoading, isError } = useQuery({
-    queryFn: () => getPropertyById(values?.propertyId),
-    queryKey: [values?.propertyId],
+    queryFn: () => getPropertyById(/* values?.propertyId */ 20),
+    queryKey: ["property"],
   });
   if (!data || isError || isLoading || !values) return;
 
@@ -90,25 +90,26 @@ export default function FlatsPage() {
             </SelectContent>
           </Select>
         </div>
-        {flatToUpdate && (
-          <UnitForm flat={flatToUpdate} tenants={property?.tenants} />
-        )}
+        {flatToUpdate && <UnitForm flat={flatToUpdate} />}
       </div>
     </div>
   );
 }
 
-function UnitForm({
-  flat,
-  tenants,
-}: {
-  flat: Flat;
-  tenants: Tenant[] | undefined;
-}) {
+function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
+  const [openSheet, setOpenSheet] = useState(false);
+  const [openDrawer, setOpenDrawer] = useState(false);
   const form = useForm<z.infer<typeof flatSchema>>({
     defaultValues: { size: flat.size ?? 0, type: flat.type },
     resolver: zodResolver(flatSchema),
   });
+
+  const { data } = useQuery({
+    queryFn: async () => await getAllTenants(),
+    queryKey: ["tenants"],
+  });
+
+  if (!data) return;
 
   return (
     <Form {...form}>
@@ -148,105 +149,111 @@ function UnitForm({
           )}
         />
         <div className="grid items-end gap-2 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="activeTenant"
-            render={({ field }) => (
-              <FormItem className="flex w-full flex-col pt-2">
-                <FormLabel>Aktueller Mieter</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className={cn(
-                          " justify-between",
-                          !field.value && "text-muted-foreground",
-                        )}
-                      >
-                        {field.value
-                          ? tenants?.find(
-                              (tenant) => tenant.id?.toString() === field.value,
-                            )?.firstName
-                          : "Wähle einen Mieter"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[310px] p-0" align="start">
-                    <Command>
-                      <CommandInput
-                        placeholder="Mieter suchen..."
-                        disabled={tenants?.length === 0}
-                      />
-                      <CommandEmpty>Keinen Mieter gefunden.</CommandEmpty>
-                      <CommandGroup>
-                        {tenants?.map((tenant) => (
-                          <CommandItem
-                            value={tenant.id?.toString()}
-                            key={tenant.id}
-                            onSelect={() => {
-                              form.setValue(
-                                "activeTenant",
-                                tenant.id!.toString(),
-                              );
-                            }}
+          {data?.body && (
+            <FormField
+              control={form.control}
+              name="activeTenant"
+              render={({ field }) => {
+                const tenantToFind = data.body?.find(
+                  (tenant) => tenant.id?.toString() === field.value,
+                );
+                return (
+                  <FormItem className="flex w-full flex-col pt-2">
+                    <FormLabel>Aktueller Mieter</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              " justify-between",
+                              !field.value && "text-muted-foreground",
+                            )}
                           >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                tenant.id?.toString() === field.value
-                                  ? "opacity-100"
-                                  : "opacity-0",
-                              )}
-                            />
-                            {tenant.firstName + " " + tenant.lastName}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Sheet>
+                            {field.value
+                              ? tenantToFind?.firstName +
+                                " " +
+                                tenantToFind?.lastName
+                              : "Wähle einen Mieter"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[310px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Mieter suchen..." />
+                          <CommandEmpty>Keinen Mieter gefunden.</CommandEmpty>
+                          <CommandList>
+                            <CommandGroup>
+                              {data.body?.map((tenant) => (
+                                <CommandItem
+                                  value={tenant.id.toString()}
+                                  key={tenant.id}
+                                  onSelect={() => {
+                                    form.setValue(
+                                      "activeTenant",
+                                      tenant.id!.toString(),
+                                    );
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      tenant.id.toString() === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  {tenant.firstName + " " + tenant.lastName}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+          )}
+          <Sheet open={openSheet} onOpenChange={setOpenSheet}>
             <SheetTrigger
               className={cn(
                 buttonVariants({ variant: "default" }),
                 "hidden md:block",
               )}
             >
-              Neuen Mieter anlegen
+              Neuer Mieter
             </SheetTrigger>
             <SheetContent>
-              <TenantForm />
+              <TenantForm
+                flatId={flat.id}
+                propertyId={flat.propertyId}
+                closeMenu={setOpenSheet}
+              />
             </SheetContent>
           </Sheet>
-          <Drawer>
+          <Drawer open={openDrawer} onOpenChange={setOpenDrawer}>
             <DrawerTrigger
               className={cn(
                 buttonVariants({ variant: "default" }),
                 "md:hidden",
               )}
             >
-              Neuen Mieter anlegen
+              Neuer Mieter
             </DrawerTrigger>
             <DrawerContent>
               <DrawerHeader>
-                <DrawerTitle>Lege einen neuen Mieter an</DrawerTitle>
-                <DrawerDescription>
-                  <TenantForm />
-                </DrawerDescription>
+                <DrawerTitle>Neuer Mieter</DrawerTitle>
+                <TenantForm
+                  flatId={flat.id}
+                  propertyId={flat.propertyId}
+                  closeMenu={setOpenDrawer}
+                />
               </DrawerHeader>
-              <DrawerFooter>
-                <Button>Speichern</Button>
-                <DrawerClose>
-                  <Button variant="outline">Abbrechen</Button>
-                </DrawerClose>
-              </DrawerFooter>
             </DrawerContent>
           </Drawer>
         </div>
@@ -255,48 +262,165 @@ function UnitForm({
   );
 }
 
-function TenantForm() {
+function TenantForm({
+  flatId,
+  propertyId,
+  closeMenu,
+}: {
+  closeMenu: (x: boolean) => void;
+  flatId: number;
+  propertyId: number;
+}) {
   const form = useForm<z.infer<typeof tenantSchema>>({
     defaultValues: {
-      coldrent: 0,
+      coldRent: 0,
       email: "",
       firstName: "",
       lastName: "",
       mobile: "",
       phone: "",
       utilityRent: 0,
+      flatId,
+      propertyId,
+    },
+  });
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: createTenant,
+    onSuccess: (res) => {
+      if (res?.message === "error") {
+        return toast.error(res?.error);
+      }
+      toast.success("Das hat geklappt.");
+      closeMenu(false);
     },
   });
 
   return (
     <Form {...form}>
-      <form className="flex w-full max-w-sm flex-col gap-4">
+      <form
+        className="flex w-full max-w-sm flex-col gap-4"
+        onSubmit={form.handleSubmit((data) => mutate(data))}
+      >
+        <div className="flex items-center gap-4">
+          <FormField
+            name="firstName"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem className="hidden">
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="lastName"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem className="hidden">
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="firstName"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Vorname</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="lastName"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nachname</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
-          name="coldrent"
+          name="phone"
           control={form.control}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Kaltmiete</FormLabel>
+              <FormLabel>Telefon</FormLabel>
               <FormControl>
-                <Input {...field} type="number" />
+                <Input {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         <FormField
-          name="utilityRent"
+          name="mobile"
           control={form.control}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nebenkosten</FormLabel>
+              <FormLabel>Mobil</FormLabel>
               <FormControl>
-                <Input {...field} type="number" />
+                <Input {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        <FormField
+          name="email"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>E-Mail</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex items-center gap-4">
+          <FormField
+            name="coldRent"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Kaltmiete</FormLabel>
+                <FormControl>
+                  <Input {...field} type="number" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="utilityRent"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nebenkosten</FormLabel>
+                <FormControl>
+                  <Input {...field} type="number" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <Button disabled={isPending}>Mieter speichern</Button>
       </form>
     </Form>
   );

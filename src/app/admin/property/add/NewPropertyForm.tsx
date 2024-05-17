@@ -125,7 +125,7 @@ export default function NewPropertyForm() {
             )}
           />
         </div>
-        <div className="grid grid-cols-2 gap-x-4">
+        <div className="grid grid-cols-2 items-end gap-x-4">
           <FormField
             control={form.control}
             name="units"
@@ -144,7 +144,7 @@ export default function NewPropertyForm() {
             name="commercial"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Gewerbliche Einheiten</FormLabel>
+                <FormLabel>Gewerblich</FormLabel>
                 <FormControl>
                   <Input type="number" min={0} {...field} />
                 </FormControl>
