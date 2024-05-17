@@ -1,6 +1,8 @@
 "use client";
 
+import { queryClient } from "@/components/providers/QueryProvider";
 import { useStatus } from "@/components/providers/StatusProvider";
+import TenantForm from "@/components/TenantForm";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Command,
@@ -40,10 +42,11 @@ import {
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { flatSchema, type tenantSchema } from "@/lib/validators";
+import { flatSchema } from "@/lib/validators";
 import type { Flat } from "@/server/db/schema";
 import { getPropertyById } from "@/server/property";
-import { createTenant, getAllTenants } from "@/server/tenants";
+import { getAllTenants } from "@/server/tenants";
+import updateUnit from "@/server/units";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -57,9 +60,10 @@ export default function FlatsPage() {
   const values = useStatus();
 
   const { data, isLoading, isError } = useQuery({
-    queryFn: () => getPropertyById(/* values?.propertyId */ 20),
+    queryFn: () => getPropertyById(values?.propertyId),
     queryKey: ["property"],
   });
+
   if (!data || isError || isLoading || !values) return;
 
   const { body: property } = data;
@@ -100,7 +104,12 @@ function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
   const [openSheet, setOpenSheet] = useState(false);
   const [openDrawer, setOpenDrawer] = useState(false);
   const form = useForm<z.infer<typeof flatSchema>>({
-    defaultValues: { size: flat.size ?? 0, type: flat.type },
+    values: {
+      id: flat.id,
+      size: flat.size ?? 0,
+      type: flat.type,
+      activeTenant: flat.activeTenantId,
+    },
     resolver: zodResolver(flatSchema),
   });
 
@@ -109,11 +118,37 @@ function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
     queryKey: ["tenants"],
   });
 
-  if (!data) return;
+  const refetchProperty = () => {
+    void queryClient.invalidateQueries({ queryKey: ["property"] });
+  };
+
+  const { mutate } = useMutation({
+    mutationFn: updateUnit,
+    onSuccess: (res) => {
+      if (res?.message === "error") return toast.error(res.error);
+      refetchProperty();
+      toast.success("Das hat geklappt");
+    },
+  });
 
   return (
     <Form {...form}>
-      <form className="flex w-full max-w-sm flex-col gap-4">
+      <form
+        className="flex w-full max-w-sm flex-col gap-4"
+        onSubmit={form.handleSubmit((data) => mutate(data))}
+      >
+        <FormField
+          name="id"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem className="hidden">
+              <FormControl>
+                <Input {...field} type="number" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           name="size"
           control={form.control}
@@ -155,7 +190,7 @@ function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
               name="activeTenant"
               render={({ field }) => {
                 const tenantToFind = data.body?.find(
-                  (tenant) => tenant.id?.toString() === field.value,
+                  (tenant) => tenant.id === field.value,
                 );
                 return (
                   <FormItem className="flex w-full flex-col pt-2">
@@ -188,19 +223,18 @@ function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
                             <CommandGroup>
                               {data.body?.map((tenant) => (
                                 <CommandItem
-                                  value={tenant.id.toString()}
+                                  value={
+                                    tenant.firstName + " " + tenant.lastName
+                                  }
                                   key={tenant.id}
                                   onSelect={() => {
-                                    form.setValue(
-                                      "activeTenant",
-                                      tenant.id!.toString(),
-                                    );
+                                    form.setValue("activeTenant", tenant.id);
                                   }}
                                 >
                                   <Check
                                     className={cn(
                                       "mr-2 h-4 w-4",
-                                      tenant.id.toString() === field.value
+                                      tenant.id === field.value
                                         ? "opacity-100"
                                         : "opacity-0",
                                     )}
@@ -213,7 +247,6 @@ function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
                         </Command>
                       </PopoverContent>
                     </Popover>
-                    <FormMessage />
                   </FormItem>
                 );
               }}
@@ -222,24 +255,20 @@ function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
           <Sheet open={openSheet} onOpenChange={setOpenSheet}>
             <SheetTrigger
               className={cn(
-                buttonVariants({ variant: "default" }),
+                buttonVariants({ variant: "secondary" }),
                 "hidden md:block",
               )}
             >
               Neuer Mieter
             </SheetTrigger>
             <SheetContent>
-              <TenantForm
-                flatId={flat.id}
-                propertyId={flat.propertyId}
-                closeMenu={setOpenSheet}
-              />
+              <TenantForm closeMenu={setOpenSheet} />
             </SheetContent>
           </Sheet>
           <Drawer open={openDrawer} onOpenChange={setOpenDrawer}>
             <DrawerTrigger
               className={cn(
-                buttonVariants({ variant: "default" }),
+                buttonVariants({ variant: "secondary" }),
                 "md:hidden",
               )}
             >
@@ -248,179 +277,12 @@ function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
             <DrawerContent>
               <DrawerHeader>
                 <DrawerTitle>Neuer Mieter</DrawerTitle>
-                <TenantForm
-                  flatId={flat.id}
-                  propertyId={flat.propertyId}
-                  closeMenu={setOpenDrawer}
-                />
+                <TenantForm closeMenu={setOpenDrawer} />
               </DrawerHeader>
             </DrawerContent>
           </Drawer>
         </div>
-      </form>
-    </Form>
-  );
-}
-
-function TenantForm({
-  flatId,
-  propertyId,
-  closeMenu,
-}: {
-  closeMenu: (x: boolean) => void;
-  flatId: number;
-  propertyId: number;
-}) {
-  const form = useForm<z.infer<typeof tenantSchema>>({
-    defaultValues: {
-      coldRent: 0,
-      email: "",
-      firstName: "",
-      lastName: "",
-      mobile: "",
-      phone: "",
-      utilityRent: 0,
-      flatId,
-      propertyId,
-    },
-  });
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: createTenant,
-    onSuccess: (res) => {
-      if (res?.message === "error") {
-        return toast.error(res?.error);
-      }
-      toast.success("Das hat geklappt.");
-      closeMenu(false);
-    },
-  });
-
-  return (
-    <Form {...form}>
-      <form
-        className="flex w-full max-w-sm flex-col gap-4"
-        onSubmit={form.handleSubmit((data) => mutate(data))}
-      >
-        <div className="flex items-center gap-4">
-          <FormField
-            name="firstName"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem className="hidden">
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            name="lastName"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem className="hidden">
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-          <FormField
-            name="firstName"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Vorname</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            name="lastName"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nachname</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-          name="phone"
-          control={form.control}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telefon</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          name="mobile"
-          control={form.control}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mobil</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          name="email"
-          control={form.control}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>E-Mail</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="flex items-center gap-4">
-          <FormField
-            name="coldRent"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Kaltmiete</FormLabel>
-                <FormControl>
-                  <Input {...field} type="number" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            name="utilityRent"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nebenkosten</FormLabel>
-                <FormControl>
-                  <Input {...field} type="number" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <Button disabled={isPending}>Mieter speichern</Button>
+        <Button type="submit">Speichern</Button>
       </form>
     </Form>
   );

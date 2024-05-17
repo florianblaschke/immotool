@@ -21,9 +21,10 @@ export const newPropertySchema = z.object({
 export type NewPropertyType = z.infer<typeof newPropertySchema>;
 
 export const flatSchema = z.object({
+  id: z.coerce.number(),
   size: z.coerce.number(),
   type: z.enum(["commercial", "normal"]),
-  activeTenant: z.string(),
+  activeTenant: z.coerce.number().optional().nullable(),
 });
 
 export type FlatType = z.infer<typeof flatSchema>;
@@ -38,8 +39,8 @@ export const tenantSchema = z.object({
   phone: z.string().optional(),
   mobile: z.string().optional(),
   email: z.string().email(),
-  flatId: z.coerce.number(),
-  propertyId: z.coerce.number(),
+  flatId: z.coerce.number().optional(),
+  propertyId: z.coerce.number().optional(),
 });
 
 export const expensesSchema = z.object({

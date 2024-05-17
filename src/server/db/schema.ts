@@ -6,6 +6,7 @@ import {
   pgEnum,
   pgTableCreator,
   primaryKey,
+  real,
   serial,
   text,
   timestamp,
@@ -140,8 +141,8 @@ export const tenants = createTable("tenants", {
   email: varchar("email", { length: 255 }),
   movedIn: date("movedIn"),
   movedOut: date("movedOut"),
-  flatId: integer("flatId").notNull(),
-  propertyId: integer("propertyId").notNull(),
+  flatId: integer("flatId"),
+  propertyId: integer("propertyId"),
 });
 
 export const flatTypeEnum = pgEnum("flat_type", ["normal", "commercial"]);
@@ -149,7 +150,7 @@ export const flatTypeEnum = pgEnum("flat_type", ["normal", "commercial"]);
 export const flats = createTable("flats", {
   id: serial("id").primaryKey(),
   type: flatTypeEnum("type").notNull(),
-  size: integer("size"),
+  size: real("size"),
   number: integer("number").notNull(),
   propertyId: integer("propertyId").notNull(),
   activeTenantId: integer("tenantId"),
