@@ -6,7 +6,7 @@ import { and } from "drizzle-orm";
 import { ZodError, type z } from "zod";
 import { getServerAuthSession } from "./auth";
 import { db } from "./db";
-import { Flat, flats, property } from "./db/schema";
+import { type Flat, flats, property } from "./db/schema";
 
 export default async function createProperty(
   data: z.infer<typeof newPropertySchema>,
@@ -27,7 +27,7 @@ export default async function createProperty(
     if (existingProptery)
       throw new ActionError("property exists already", { code: 500 });
 
-    let propertyId: number = 0;
+    let propertyId = 0;
 
     await db.transaction(async (tx) => {
       const [newProperty] = await tx
@@ -85,10 +85,11 @@ export default async function createProperty(
   }
 }
 
-export async function getPropertyById(id: number) {
+export async function getPropertyById(id: number | undefined) {
   try {
     const session = await getServerAuthSession();
     if (!session) throw new ActionError("unauthorized", { code: 401 });
+    if (!id) throw new ActionError("missing id", { code: 404 });
 
     const property = await db.query.property.findFirst({
       where: (property, { eq }) => eq(property.id, id),
@@ -103,6 +104,12 @@ export async function getPropertyById(id: number) {
         return {
           message: "error",
           error: "Du bist nicht berechtigt für diese Aktion.",
+        };
+      }
+      if (error.cause === 404) {
+        return {
+          message: "error",
+          error: "Es gab keine passenden Ergebnisse zu deiner Suchanfrage.",
         };
       }
     }

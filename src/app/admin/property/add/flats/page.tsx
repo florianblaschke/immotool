@@ -1,6 +1,24 @@
 "use client";
 
 import { useStatus } from "@/components/providers/StatusProvider";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTrigger,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import {
   Form,
   FormControl,
@@ -11,14 +29,21 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { flatSchema, tenantSchema } from "@/lib/validators";
-import { Flat, Tenant } from "@/server/db/schema";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+import { flatSchema, type tenantSchema } from "@/lib/validators";
+import type { Flat, Tenant } from "@/server/db/schema";
 import { getPropertyById } from "@/server/property";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -26,32 +51,16 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { type z } from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import { FormDescription } from "@/components/ui/form";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 
 export default function FlatsPage() {
   const [selectValue, setSelectValue] = useState<string>("1");
   const values = useStatus();
-  if (!values) return null;
 
   const { data, isLoading, isError } = useQuery({
-    queryFn: () => getPropertyById(values.propertyId),
-    queryKey: [values.propertyId],
+    queryFn: () => getPropertyById(values?.propertyId),
+    queryKey: [values?.propertyId],
   });
-  if (!data || isError || isLoading) return;
+  if (!data || isError || isLoading || !values) return;
 
   const { body: property } = data;
 
@@ -98,6 +107,7 @@ function UnitForm({
 }) {
   const form = useForm<z.infer<typeof flatSchema>>({
     defaultValues: { size: flat.size ?? 0, type: flat.type },
+    resolver: zodResolver(flatSchema),
   });
 
   return (
@@ -137,70 +147,109 @@ function UnitForm({
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="activeTenant"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Aktueller Mieter</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className={cn(
-                        "w-[200px] justify-between",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      {field.value
-                        ? tenants?.find(
-                            (tenant) => tenant.id?.toString() === field.value,
-                          )?.firstName
-                        : "Wähle einen Mieter"}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Mieter suchen..." />
-                    <CommandEmpty>Keinen Mieter gefunden.</CommandEmpty>
-                    <CommandGroup>
-                      {tenants?.map((tenant) => (
-                        <CommandItem
-                          value={tenant.id?.toString()}
-                          key={tenant.id}
-                          onSelect={() => {
-                            form.setValue(
-                              "activeTenant",
-                              tenant.id!.toString(),
-                            );
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              tenant.id?.toString()! === field.value
-                                ? "opacity-100"
-                                : "opacity-0",
-                            )}
-                          />
-                          {tenant.firstName + " " + tenant.lastName}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              <FormDescription>
-                This is the language that will be used in the dashboard.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid items-end gap-2 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="activeTenant"
+            render={({ field }) => (
+              <FormItem className="flex w-full flex-col pt-2">
+                <FormLabel>Aktueller Mieter</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          " justify-between",
+                          !field.value && "text-muted-foreground",
+                        )}
+                      >
+                        {field.value
+                          ? tenants?.find(
+                              (tenant) => tenant.id?.toString() === field.value,
+                            )?.firstName
+                          : "Wähle einen Mieter"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[310px] p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Mieter suchen..."
+                        disabled={tenants?.length === 0}
+                      />
+                      <CommandEmpty>Keinen Mieter gefunden.</CommandEmpty>
+                      <CommandGroup>
+                        {tenants?.map((tenant) => (
+                          <CommandItem
+                            value={tenant.id?.toString()}
+                            key={tenant.id}
+                            onSelect={() => {
+                              form.setValue(
+                                "activeTenant",
+                                tenant.id!.toString(),
+                              );
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                tenant.id?.toString() === field.value
+                                  ? "opacity-100"
+                                  : "opacity-0",
+                              )}
+                            />
+                            {tenant.firstName + " " + tenant.lastName}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Sheet>
+            <SheetTrigger
+              className={cn(
+                buttonVariants({ variant: "default" }),
+                "hidden md:block",
+              )}
+            >
+              Neuen Mieter anlegen
+            </SheetTrigger>
+            <SheetContent>
+              <TenantForm />
+            </SheetContent>
+          </Sheet>
+          <Drawer>
+            <DrawerTrigger
+              className={cn(
+                buttonVariants({ variant: "default" }),
+                "md:hidden",
+              )}
+            >
+              Neuen Mieter anlegen
+            </DrawerTrigger>
+            <DrawerContent>
+              <DrawerHeader>
+                <DrawerTitle>Lege einen neuen Mieter an</DrawerTitle>
+                <DrawerDescription>
+                  <TenantForm />
+                </DrawerDescription>
+              </DrawerHeader>
+              <DrawerFooter>
+                <Button>Speichern</Button>
+                <DrawerClose>
+                  <Button variant="outline">Abbrechen</Button>
+                </DrawerClose>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
+        </div>
       </form>
     </Form>
   );

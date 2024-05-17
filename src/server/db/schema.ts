@@ -1,4 +1,4 @@
-import { InferInsertModel, relations, sql } from "drizzle-orm";
+import { type InferInsertModel, relations, sql } from "drizzle-orm";
 import {
   date,
   index,
@@ -140,8 +140,8 @@ export const tenants = createTable("tenants", {
   email: varchar("email", { length: 255 }),
   movedIn: date("movedIn"),
   movedOut: date("movedOut"),
-  flatId: varchar("flatId", { length: 255 }).notNull(),
-  propertyId: varchar("propertyId", { length: 255 }).notNull(),
+  flatId: integer("flatId").notNull(),
+  propertyId: integer("propertyId").notNull(),
 });
 
 export const flatTypeEnum = pgEnum("flat_type", ["normal", "commercial"]);
