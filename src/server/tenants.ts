@@ -29,7 +29,6 @@ export async function createTenant(data: z.infer<typeof tenantSchema>) {
       movedIn: new Date().toString(),
       movedOut: undefined,
     });
-
     return { message: "success" };
   } catch (error) {
     if (error instanceof Error) {

@@ -38,7 +38,7 @@ export const tenantSchema = z.object({
   movedOut: z.date().optional(),
   phone: z.string().optional(),
   mobile: z.string().optional(),
-  email: z.string().email(),
+  email: z.string().email().optional(),
   flatId: z.coerce.number().optional(),
   propertyId: z.coerce.number().optional(),
 });

@@ -152,7 +152,9 @@ export const flats = createTable("flats", {
   type: flatTypeEnum("type").notNull(),
   size: real("size"),
   number: integer("number").notNull(),
-  propertyId: integer("propertyId").notNull(),
+  propertyId: integer("propertyId")
+    .references(() => property.id, { onDelete: "cascade" })
+    .notNull(),
   activeTenantId: integer("tenantId"),
 });
 
@@ -181,6 +183,8 @@ export const tenantsRelation = relations(tenants, ({ one }) => ({
   }),
 }));
 
-export type Property = InferInsertModel<typeof property>;
+export type Property = Omit<InferInsertModel<typeof property>, "id"> & {
+  id: number;
+};
 export type Flat = InferInsertModel<typeof flats>;
 export type Tenant = InferInsertModel<typeof tenants>;

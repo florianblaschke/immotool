@@ -1,5 +1,6 @@
 "use client";
 
+import { queryClient } from "@/components/providers/QueryProvider";
 import { useStatus } from "@/components/providers/StatusProvider";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +50,10 @@ export default function NewPropertyForm() {
   };
   const values = useStatus();
 
+  const refetchProperties = () => {
+    void queryClient.invalidateQueries({ queryKey: ["property"] });
+  };
+
   const { mutate, isPending } = useMutation({
     mutationFn: createProperty,
     onSuccess: (res) => {
@@ -61,6 +66,7 @@ export default function NewPropertyForm() {
         values.setStatus(true);
         res?.data ? values.setPropertyId(res?.data) : null;
       }
+      refetchProperties();
       return toast.success("Das hat geklappt");
     },
   });

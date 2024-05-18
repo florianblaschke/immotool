@@ -1,6 +1,3 @@
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { ArrowUpRight, DoorOpen, Euro, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +17,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getServerAuthSession } from "@/server/auth";
+import { ArrowUpRight, DoorOpen, Euro, Users } from "lucide-react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 
 const cards: {
   name: string;

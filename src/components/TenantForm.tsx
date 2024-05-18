@@ -1,4 +1,4 @@
-import { type tenantSchema } from "@/lib/validators";
+import { tenantSchema } from "@/lib/validators";
 import { createTenant } from "@/server/tenants";
 import { useForm } from "react-hook-form";
 import {
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { type z } from "zod";
 import { Button } from "./ui/button";
 import { queryClient } from "./providers/QueryProvider";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export default function TenantForm({
   closeMenu,
@@ -22,19 +23,11 @@ export default function TenantForm({
   closeMenu?: (x: boolean) => void;
 }) {
   const form = useForm<z.infer<typeof tenantSchema>>({
-    defaultValues: {
-      coldRent: 0,
-      email: "",
-      firstName: "",
-      lastName: "",
-      mobile: "",
-      phone: "",
-      utilityRent: 0,
-    },
+    resolver: zodResolver(tenantSchema),
   });
 
-  const refetchTenants = () => {
-    void queryClient.invalidateQueries({ queryKey: ["tenants"] });
+  const refetchTenants = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["tenants"] });
   };
 
   const { mutate, isPending } = useMutation({
@@ -43,7 +36,8 @@ export default function TenantForm({
       if (res?.message === "error") {
         return toast.error(res?.error);
       }
-      refetchTenants(), toast.success("Das hat geklappt.");
+      toast.success("Das hat geklappt.");
+      void refetchTenants();
       if (closeMenu) closeMenu(false);
     },
   });
@@ -149,7 +143,9 @@ export default function TenantForm({
             )}
           />
         </div>
-        <Button disabled={isPending}>Mieter speichern</Button>
+        <Button type="submit" disabled={isPending}>
+          Mieter speichern
+        </Button>
       </form>
     </Form>
   );

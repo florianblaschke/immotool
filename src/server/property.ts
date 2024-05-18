@@ -2,11 +2,12 @@
 
 import { ActionError } from "@/lib/utils";
 import { newPropertySchema } from "@/lib/validators";
-import { and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { ZodError, type z } from "zod";
 import { getServerAuthSession } from "./auth";
 import { db } from "./db";
 import { type Flat, flats, property } from "./db/schema";
+import { revalidatePath } from "next/cache";
 
 export default async function createProperty(
   data: z.infer<typeof newPropertySchema>,
@@ -39,25 +40,29 @@ export default async function createProperty(
 
       propertyId = newProperty.id;
 
-      const normalFlats: Flat[] = Array.from({
-        length: newProperty.units,
-      }).map((_, i) => ({
-        propertyId: newProperty.id,
-        type: "normal",
-        number: i + 1,
-      }));
+      if (validData.commercial > 0) {
+        const commercialFlats: Flat[] = Array.from({
+          length: newProperty.commercial,
+        }).map((_, i) => ({
+          type: "commercial",
+          propertyId: newProperty.id,
+          number: i + newProperty.units + 1,
+        }));
 
-      const commercialFlats: Flat[] = Array.from({
-        length: newProperty.commercial,
-      }).map((_, i) => ({
-        type: "commercial",
-        propertyId: newProperty.id,
-        number: i + newProperty.units + 1,
-      }));
-
-      await tx.insert(flats).values(commercialFlats);
-      await tx.insert(flats).values(normalFlats);
+        await tx.insert(flats).values(commercialFlats);
+      }
+      if (validData.units > 0) {
+        const normalFlats: Flat[] = Array.from({
+          length: newProperty.units,
+        }).map((_, i) => ({
+          propertyId: newProperty.id,
+          type: "normal",
+          number: i + 1,
+        }));
+        await tx.insert(flats).values(normalFlats);
+      }
     });
+    revalidatePath("/admin/property");
     return { message: "success", data: propertyId };
   } catch (error) {
     if (error instanceof ActionError) {
@@ -112,6 +117,29 @@ export async function getPropertyById(id: number | undefined) {
           error: "Es gab keine passenden Ergebnisse zu deiner Suchanfrage.",
         };
       }
+    }
+  }
+}
+
+export async function getAllProperties() {
+  try {
+    const properties = await db.query.property.findMany();
+    return { messag: "success", body: properties };
+  } catch (error) {
+    if (error instanceof Error) {
+      return { message: "error", error: error.message };
+    }
+  }
+}
+
+export async function deleteProperty(id: number) {
+  try {
+    await db.delete(property).where(eq(property.id, id));
+    revalidatePath("/property");
+    return { message: "success" };
+  } catch (error) {
+    if (error instanceof Error) {
+      return { message: "error", error: error.message };
     }
   }
 }
