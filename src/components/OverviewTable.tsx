@@ -91,15 +91,19 @@ export default function OverviewTable({
                 </DropdownMenu>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Bist du dir sicher?</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="pb-4">
+                      Bist du dir sicher?
+                    </DialogTitle>
+                    <DialogDescription className="pb-4">
                       Diese Aktion kann nicht rückgängig gemacht werden. Die
                       Liegenschaft und alle zugehörigen Einheiten werden
                       gelöscht.
                     </DialogDescription>
                   </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="secondary">Abbrechen</Button>
+                  <DialogFooter className="gap-2">
+                    <Button variant="secondary" onClick={() => setOpen(false)}>
+                      Abbrechen
+                    </Button>
                     <Button
                       disabled={isPending}
                       variant="destructive"

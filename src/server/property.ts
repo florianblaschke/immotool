@@ -3,11 +3,11 @@
 import { ActionError } from "@/lib/utils";
 import { newPropertySchema } from "@/lib/validators";
 import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { ZodError, type z } from "zod";
 import { getServerAuthSession } from "./auth";
 import { db } from "./db";
 import { type Flat, flats, property } from "./db/schema";
-import { revalidatePath } from "next/cache";
 
 export default async function createProperty(
   data: z.infer<typeof newPropertySchema>,
@@ -93,18 +93,18 @@ export default async function createProperty(
 export async function getPropertyById(id: number | undefined) {
   try {
     const session = await getServerAuthSession();
-    if (!session) throw new ActionError("unauthorized", { code: 401 });
-    if (!id) throw new ActionError("missing id", { code: 404 });
+    if (!session) throw new Error("unauthorized", { cause: 401 });
+    if (!id) throw new Error("missing id", { cause: 404 });
 
     const property = await db.query.property.findFirst({
       where: (property, { eq }) => eq(property.id, id),
-      with: { flats: true, tenants: true },
+      with: { flats: true },
     });
     return { message: "success", body: property };
   } catch (error) {
     if (error instanceof Error)
       return { message: "error", error: error.message };
-    if (error instanceof ActionError) {
+    if (error instanceof Error) {
       if (error.cause === 401) {
         return {
           message: "error",
@@ -121,9 +121,9 @@ export async function getPropertyById(id: number | undefined) {
   }
 }
 
-export async function getAllProperties() {
+export async function getAllProperties(limit = 0, offset = 0) {
   try {
-    const properties = await db.query.property.findMany();
+    const properties = await db.query.property.findMany({ limit, offset });
     return { messag: "success", body: properties };
   } catch (error) {
     if (error instanceof Error) {

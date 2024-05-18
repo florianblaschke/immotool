@@ -139,10 +139,14 @@ export const tenants = createTable("tenants", {
   phone: varchar("phone", { length: 255 }),
   mobile: varchar("mobile", { length: 255 }),
   email: varchar("email", { length: 255 }),
-  movedIn: date("movedIn"),
+});
+
+export const rentTime = createTable("rentTime", {
+  id: serial("id").primaryKey(),
+  movedIn: date("movedIn").notNull(),
   movedOut: date("movedOut"),
-  flatId: integer("flatId"),
-  propertyId: integer("propertyId"),
+  flatId: integer("flatId").notNull(),
+  tenantId: integer("tenantId").notNull(),
 });
 
 export const flatTypeEnum = pgEnum("flat_type", ["normal", "commercial"]);
@@ -155,12 +159,12 @@ export const flats = createTable("flats", {
   propertyId: integer("propertyId")
     .references(() => property.id, { onDelete: "cascade" })
     .notNull(),
-  activeTenantId: integer("tenantId"),
+  activeTenantId: integer("activeTenantId"),
 });
 
 export const propertyRelations = relations(property, ({ many }) => ({
   flats: many(flats),
-  tenants: many(tenants),
+  tenants: many(rentTime),
 }));
 
 export const flatsRelation = relations(flats, ({ one, many }) => ({
@@ -173,13 +177,21 @@ export const flatsRelation = relations(flats, ({ one, many }) => ({
     fields: [flats.activeTenantId],
     references: [tenants.id],
   }),
+  rentTime: many(rentTime),
 }));
 
-export const tenantsRelation = relations(tenants, ({ one }) => ({
-  flats: one(flats, { fields: [tenants.flatId], references: [flats.id] }),
-  property: one(property, {
-    fields: [tenants.propertyId],
-    references: [property.id],
+export const tenantsRelation = relations(tenants, ({ many }) => ({
+  rentTime: many(rentTime),
+}));
+
+export const rentTimeRelation = relations(rentTime, ({ one }) => ({
+  tenants: one(tenants, {
+    fields: [rentTime.tenantId],
+    references: [tenants.id],
+  }),
+  flats: one(flats, {
+    fields: [rentTime.flatId],
+    references: [flats.id],
   }),
 }));
 

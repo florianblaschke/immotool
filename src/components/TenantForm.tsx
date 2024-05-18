@@ -1,6 +1,12 @@
 import { tenantSchema } from "@/lib/validators";
 import { createTenant } from "@/server/tenants";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { type z } from "zod";
+import { queryClient } from "./providers/QueryProvider";
+import { Button } from "./ui/button";
 import {
   Form,
   FormControl,
@@ -10,12 +16,6 @@ import {
   FormMessage,
 } from "./ui/form";
 import { Input } from "./ui/input";
-import { useMutation } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { type z } from "zod";
-import { Button } from "./ui/button";
-import { queryClient } from "./providers/QueryProvider";
-import { zodResolver } from "@hookform/resolvers/zod";
 
 export default function TenantForm({
   closeMenu,
@@ -24,6 +24,15 @@ export default function TenantForm({
 }) {
   const form = useForm<z.infer<typeof tenantSchema>>({
     resolver: zodResolver(tenantSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      coldRent: 0,
+      utilityRent: 0,
+      email: "",
+      mobile: "",
+      phone: "",
+    },
   });
 
   const refetchTenants = async () => {
