@@ -40,12 +40,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { flatSchema } from "@/lib/validators";
 import type { Flat } from "@/server/db/schema";
 import { getPropertyById } from "@/server/property";
-import { getAllTenants } from "@/server/tenants";
+import { changeTenant, getAllTenants } from "@/server/tenants";
 import updateUnit from "@/server/units";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -68,7 +73,7 @@ export default function FlatsPage() {
 
   const { body: property } = data;
 
-  const flatToUpdate = property?.flats.find(
+  const flatToUpdate = property?.unit.find(
     (entry) => entry.number === parseInt(selectValue),
   );
 
@@ -84,7 +89,7 @@ export default function FlatsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {property?.flats
+              {property?.unit
                 .sort((a, b) => a.number - b.number)
                 .map((entry) => (
                   <SelectItem key={entry.id} value={entry.number.toString()}>
@@ -109,6 +114,8 @@ function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
       size: flat.size ?? 0,
       type: flat.type,
       activeTenant: flat.activeTenantId,
+      coldRent: 0,
+      utilityRent: 0,
     },
     resolver: zodResolver(flatSchema),
   });
@@ -122,10 +129,35 @@ function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
     void queryClient.invalidateQueries({ queryKey: ["property"] });
   };
 
+  const { mutate: change } = useMutation({
+    mutationFn: async () =>
+      await changeTenant({
+        flatId: flat.id,
+        tenantId: form.getValues("activeTenant")!,
+        coldRent: form.getValues("coldRent"),
+        utilityRent: form.getValues("utilityRent"),
+      }),
+    onSuccess: (res) => {
+      if (res?.message === "error") {
+        return toast.error(res.error);
+      }
+      toast.success("Das hat geklappt");
+    },
+  });
+
   const { mutate } = useMutation({
     mutationFn: updateUnit,
     onSuccess: (res) => {
-      if (res?.message === "error") return toast.error(res.error);
+      if (res?.message === "error") {
+        if (res.cause === 501)
+          return toast.error(res.error, {
+            action: {
+              label: "Mieter ändern",
+              onClick: () => change(),
+            },
+          });
+        return toast.error(res.error);
+      }
       refetchProperty();
       toast.success("Das hat geklappt");
     },
@@ -184,77 +216,104 @@ function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
               </FormItem>
             )}
           />
-          <div className="grid items-end gap-2 md:grid-cols-2">
-            {data?.body && (
-              <FormField
-                control={form.control}
-                name="activeTenant"
-                render={({ field }) => {
-                  const tenantToFind = data.body?.find(
-                    (tenant) => tenant.id === field.value,
-                  );
-                  return (
-                    <FormItem className="flex w-full flex-col pt-2">
-                      <FormLabel>Aktueller Mieter</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              className={cn(
-                                " justify-between",
-                                !field.value && "text-muted-foreground",
-                              )}
-                            >
-                              {field.value
-                                ? tenantToFind?.firstName +
-                                  " " +
-                                  tenantToFind?.lastName
-                                : "Wähle einen Mieter"}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[310px] p-0" align="start">
-                          <Command>
-                            <CommandInput placeholder="Mieter suchen..." />
-                            <CommandEmpty>Keinen Mieter gefunden.</CommandEmpty>
-                            <CommandList>
-                              <CommandGroup>
-                                {data.body?.map((tenant) => (
-                                  <CommandItem
-                                    value={
-                                      tenant.firstName + " " + tenant.lastName
-                                    }
-                                    key={tenant.id}
-                                    onSelect={() => {
-                                      form.setValue("activeTenant", tenant.id);
-                                    }}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        tenant.id === field.value
-                                          ? "opacity-100"
-                                          : "opacity-0",
-                                      )}
-                                    />
-                                    {tenant.firstName + " " + tenant.lastName}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </FormItem>
-                  );
-                }}
-              />
-            )}
-            <Button type="submit">Speichern</Button>
+
+          {data?.body && (
+            <FormField
+              control={form.control}
+              name="activeTenant"
+              render={({ field }) => {
+                const tenantToFind = data.body?.find(
+                  (tenant) => tenant.id === field.value,
+                );
+                return (
+                  <FormItem className="flex w-full flex-col pt-2">
+                    <FormLabel>Aktueller Mieter</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              " justify-between",
+                              !field.value && "text-muted-foreground",
+                            )}
+                          >
+                            {field.value
+                              ? tenantToFind?.firstName +
+                                " " +
+                                tenantToFind?.lastName
+                              : "Wähle einen Mieter"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[310px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Mieter suchen..." />
+                          <CommandEmpty>Keinen Mieter gefunden.</CommandEmpty>
+                          <CommandList>
+                            <CommandGroup>
+                              {data.body?.map((tenant) => (
+                                <CommandItem
+                                  value={
+                                    tenant.firstName + " " + tenant.lastName
+                                  }
+                                  key={tenant.id}
+                                  onSelect={() => {
+                                    form.setValue("activeTenant", tenant.id);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      tenant.id === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  {tenant.firstName + " " + tenant.lastName}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </FormItem>
+                );
+              }}
+            />
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <FormField
+              name="coldRent"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Kaltmiete</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="utilityRent"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Warmmiete</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
+          <Button type="submit">Speichern</Button>
         </form>
       </Form>
       <div>
@@ -262,12 +321,13 @@ function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
           <SheetTrigger
             className={cn(
               buttonVariants({ variant: "secondary" }),
-              "hidden md:block",
+              "hidden w-full max-w-sm md:block",
             )}
           >
             Neuer Mieter
           </SheetTrigger>
           <SheetContent>
+            <SheetTitle className="pb-4">Neuer Mieter</SheetTitle>
             <TenantForm closeMenu={setOpenSheet} />
           </SheetContent>
         </Sheet>
@@ -275,14 +335,14 @@ function UnitForm({ flat }: { flat: Omit<Flat, "id"> & { id: number } }) {
           <DrawerTrigger
             className={cn(
               buttonVariants({ variant: "secondary" }),
-              "md:hidden",
+              "w-full max-w-sm md:hidden",
             )}
           >
             Neuer Mieter
           </DrawerTrigger>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>Neuer Mieter</DrawerTitle>
+              <DrawerTitle className="pb-4">Neuer Mieter</DrawerTitle>
               <TenantForm closeMenu={setOpenDrawer} />
             </DrawerHeader>
           </DrawerContent>

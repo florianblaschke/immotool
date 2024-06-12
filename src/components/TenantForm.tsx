@@ -85,32 +85,34 @@ export default function TenantForm({
             )}
           />
         </div>
-        <FormField
-          name="phone"
-          control={form.control}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telefon</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          name="mobile"
-          control={form.control}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mobil</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="flex items-center gap-4">
+          <FormField
+            name="phone"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Telefon</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="mobile"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Mobil</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
           name="email"
           control={form.control}
@@ -124,7 +126,7 @@ export default function TenantForm({
             </FormItem>
           )}
         />
-        <div className="flex items-center gap-4">
+        {/* <div className="flex items-center gap-4">
           <FormField
             name="coldRent"
             control={form.control}
@@ -151,7 +153,7 @@ export default function TenantForm({
               </FormItem>
             )}
           />
-        </div>
+        </div> */}
         <Button type="submit" disabled={isPending}>
           Mieter speichern
         </Button>

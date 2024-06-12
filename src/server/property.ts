@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { ZodError, type z } from "zod";
 import { getServerAuthSession } from "./auth";
 import { db } from "./db";
-import { type Flat, flats, property } from "./db/schema";
+import { type Flat, unit, property } from "./db/schema";
 
 export default async function createProperty(
   data: z.infer<typeof newPropertySchema>,
@@ -41,7 +41,7 @@ export default async function createProperty(
       propertyId = newProperty.id;
 
       if (validData.commercial > 0) {
-        const commercialFlats: Flat[] = Array.from({
+        const commercialunit: Flat[] = Array.from({
           length: newProperty.commercial,
         }).map((_, i) => ({
           type: "commercial",
@@ -49,17 +49,17 @@ export default async function createProperty(
           number: i + newProperty.units + 1,
         }));
 
-        await tx.insert(flats).values(commercialFlats);
+        await tx.insert(unit).values(commercialunit);
       }
       if (validData.units > 0) {
-        const normalFlats: Flat[] = Array.from({
+        const normalunit: Flat[] = Array.from({
           length: newProperty.units,
         }).map((_, i) => ({
           propertyId: newProperty.id,
           type: "normal",
           number: i + 1,
         }));
-        await tx.insert(flats).values(normalFlats);
+        await tx.insert(unit).values(normalunit);
       }
     });
     revalidatePath("/admin/property");
@@ -98,7 +98,7 @@ export async function getPropertyById(id: number | undefined) {
 
     const property = await db.query.property.findFirst({
       where: (property, { eq }) => eq(property.id, id),
-      with: { flats: true },
+      with: { unit: true },
     });
     return { message: "success", body: property };
   } catch (error) {

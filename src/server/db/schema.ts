@@ -134,24 +134,24 @@ export const tenants = createTable("tenants", {
   id: serial("id").primaryKey(),
   firstName: varchar("firstName", { length: 30 }).notNull(),
   lastName: varchar("lastName", { length: 30 }).notNull(),
-  coldRent: integer("coldRent").notNull(),
-  utilityRent: integer("utilityRent").notNull(),
   phone: varchar("phone", { length: 255 }),
   mobile: varchar("mobile", { length: 255 }),
   email: varchar("email", { length: 255 }),
 });
 
-export const rentTime = createTable("rentTime", {
+export const rentContract = createTable("rentTime", {
   id: serial("id").primaryKey(),
+  coldRent: integer("coldRent").notNull(),
+  utilityRent: integer("utilityRent").notNull(),
   movedIn: date("movedIn").notNull(),
   movedOut: date("movedOut"),
-  flatId: integer("flatId").notNull(),
+  unitId: integer("unitId").notNull(),
   tenantId: integer("tenantId").notNull(),
 });
 
 export const flatTypeEnum = pgEnum("flat_type", ["normal", "commercial"]);
 
-export const flats = createTable("flats", {
+export const unit = createTable("unit", {
   id: serial("id").primaryKey(),
   type: flatTypeEnum("type").notNull(),
   size: real("size"),
@@ -160,43 +160,44 @@ export const flats = createTable("flats", {
     .references(() => property.id, { onDelete: "cascade" })
     .notNull(),
   activeTenantId: integer("activeTenantId"),
+  activeRentDetailsId: integer("activeRentDetailsId"),
 });
 
 export const propertyRelations = relations(property, ({ many }) => ({
-  flats: many(flats),
-  tenants: many(rentTime),
+  unit: many(unit),
+  tenants: many(rentContract),
 }));
 
-export const flatsRelation = relations(flats, ({ one, many }) => ({
+export const unitRelation = relations(unit, ({ one, many }) => ({
   property: one(property, {
-    fields: [flats.propertyId],
+    fields: [unit.propertyId],
     references: [property.id],
   }),
   tenants: many(tenants),
   activeTenantId: one(tenants, {
-    fields: [flats.activeTenantId],
+    fields: [unit.activeTenantId],
     references: [tenants.id],
   }),
-  rentTime: many(rentTime),
+  rentContract: many(rentContract),
 }));
 
 export const tenantsRelation = relations(tenants, ({ many }) => ({
-  rentTime: many(rentTime),
+  rentContract: many(rentContract),
 }));
 
-export const rentTimeRelation = relations(rentTime, ({ one }) => ({
+export const rentContractRelation = relations(rentContract, ({ one }) => ({
   tenants: one(tenants, {
-    fields: [rentTime.tenantId],
+    fields: [rentContract.tenantId],
     references: [tenants.id],
   }),
-  flats: one(flats, {
-    fields: [rentTime.flatId],
-    references: [flats.id],
+  unit: one(unit, {
+    fields: [rentContract.unitId],
+    references: [unit.id],
   }),
 }));
 
 export type Property = Omit<InferInsertModel<typeof property>, "id"> & {
   id: number;
 };
-export type Flat = InferInsertModel<typeof flats>;
+export type Flat = InferInsertModel<typeof unit>;
 export type Tenant = InferInsertModel<typeof tenants>;

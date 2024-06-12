@@ -25,6 +25,8 @@ export const flatSchema = z.object({
   size: z.coerce.number(),
   type: z.enum(["commercial", "normal"]),
   activeTenant: z.coerce.number().optional().nullable(),
+  coldRent: z.coerce.number(),
+  utilityRent: z.coerce.number(),
 });
 
 export type FlatType = z.infer<typeof flatSchema>;
@@ -46,6 +48,13 @@ export const expensesSchema = z.object({
   water: z.coerce.number(),
   basicFee: z.coerce.number(),
   sewage: z.coerce.number(),
+});
+
+export const changeTenantSchema = z.object({
+  tenantId: z.coerce.number(),
+  flatId: z.coerce.number(),
+  coldRent: z.coerce.number(),
+  utilityRent: z.coerce.number(),
 });
 
 export type ExpensesType = z.infer<typeof expensesSchema>;
