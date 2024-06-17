@@ -19,10 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { newPropertySchema, validHeatingSystems } from "@/lib/validators";
-import createProperty from "@/server/property";
+import {
+  newPropertySchema,
+  type newPropertyTypeKeys,
+  validHeatingSystems,
+} from "@/lib/validators";
+import createProperty, { getPropertyById } from "@/server/property";
+import { translateHeatSystems } from "@/utils/maps";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { type z } from "zod";
@@ -42,12 +47,6 @@ export default function NewPropertyForm() {
     resolver: zodResolver(newPropertySchema),
   });
 
-  const translateHeatSystems: Record<string, string> = {
-    oil: "Öl",
-    districtheat: "Fernwärme",
-    gas: "Gas",
-    heatpump: "Wärmepumpe",
-  };
   const values = useStatus();
 
   const refetchProperties = () => {
@@ -71,6 +70,22 @@ export default function NewPropertyForm() {
     },
   });
 
+  const { data } = useQuery({
+    queryFn: () => getPropertyById(values?.propertyId),
+    queryKey: ["property"],
+  });
+
+  if (values?.status === true && values.propertyId) {
+    if (data?.body) {
+      Object.entries(data.body).map(([key, value]) =>
+        form.setValue(
+          key as newPropertyTypeKeys,
+          value as string | number | undefined,
+        ),
+      );
+    }
+  }
+
   return (
     <Form {...form}>
       <form
@@ -85,7 +100,11 @@ export default function NewPropertyForm() {
               <FormItem className="col-span-3">
                 <FormLabel>Straße</FormLabel>
                 <FormControl>
-                  <Input type="string" {...field} />
+                  <Input
+                    type="string"
+                    {...field}
+                    disabled={values?.status === true}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -98,7 +117,11 @@ export default function NewPropertyForm() {
               <FormItem className="col-span-2">
                 <FormLabel>Nummer</FormLabel>
                 <FormControl>
-                  <Input type="text" {...field} />
+                  <Input
+                    type="text"
+                    {...field}
+                    disabled={values?.status === true}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -111,7 +134,12 @@ export default function NewPropertyForm() {
               <FormItem className="col-span-2">
                 <FormLabel>PLZ</FormLabel>
                 <FormControl>
-                  <Input type="number" min={10000} {...field} />
+                  <Input
+                    type="number"
+                    min={10000}
+                    {...field}
+                    disabled={values?.status === true}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -124,7 +152,11 @@ export default function NewPropertyForm() {
               <FormItem className="col-span-2">
                 <FormLabel>Stadt</FormLabel>
                 <FormControl>
-                  <Input type="string" {...field} />
+                  <Input
+                    type="string"
+                    {...field}
+                    disabled={values?.status === true}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -139,7 +171,12 @@ export default function NewPropertyForm() {
               <FormItem>
                 <FormLabel>Wohneinheiten</FormLabel>
                 <FormControl>
-                  <Input type="number" min={0} {...field} />
+                  <Input
+                    type="number"
+                    min={0}
+                    {...field}
+                    disabled={values?.status === true}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -152,7 +189,12 @@ export default function NewPropertyForm() {
               <FormItem>
                 <FormLabel>Gewerblich</FormLabel>
                 <FormControl>
-                  <Input type="number" min={0} {...field} />
+                  <Input
+                    type="number"
+                    min={0}
+                    {...field}
+                    disabled={values?.status === true}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -167,7 +209,11 @@ export default function NewPropertyForm() {
               <FormItem className="grid w-full grid-cols-2 gap-4 space-y-0">
                 <div className="space-y-2">
                   <FormLabel>Heizungsart</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={values?.status === true}
+                  >
                     <SelectTrigger className="mt-2">
                       <FormControl>
                         <SelectValue
@@ -194,7 +240,12 @@ export default function NewPropertyForm() {
                       <FormItem>
                         <FormLabel>Tankvolumen in l</FormLabel>
                         <FormControl>
-                          <Input type="number" min={0} {...field} />
+                          <Input
+                            type="number"
+                            min={0}
+                            {...field}
+                            disabled={values?.status === true}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -205,7 +256,7 @@ export default function NewPropertyForm() {
             </div>
           )}
         />
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={isPending || values?.status === true}>
           Anlegen
         </Button>
       </form>

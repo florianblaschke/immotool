@@ -19,6 +19,8 @@ export const newPropertySchema = z.object({
 });
 
 export type NewPropertyType = z.infer<typeof newPropertySchema>;
+const PropertyEnum = newPropertySchema.keyof();
+export type newPropertyTypeKeys = z.infer<typeof PropertyEnum>;
 
 export const flatSchema = z.object({
   id: z.coerce.number(),
