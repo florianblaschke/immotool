@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { getAllProperties } from "@/server/property";
+import { getAllProperties } from "@/server/property/property";
 import { CirclePlus } from "lucide-react";
 import Link from "next/link";
 

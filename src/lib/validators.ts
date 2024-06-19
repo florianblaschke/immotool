@@ -20,7 +20,7 @@ export const newPropertySchema = z.object({
 
 export type NewPropertyType = z.infer<typeof newPropertySchema>;
 const PropertyEnum = newPropertySchema.keyof();
-export type newPropertyTypeKeys = z.infer<typeof PropertyEnum>;
+export type NewPropertyTypeKeys = z.infer<typeof PropertyEnum>;
 
 export const flatSchema = z.object({
   id: z.coerce.number(),
@@ -51,6 +51,9 @@ export const expensesSchema = z.object({
   basicFee: z.coerce.number(),
   sewage: z.coerce.number(),
 });
+
+export const ExpenseEnum = expensesSchema.keyof();
+export type ExpenseEnumType = z.infer<typeof ExpenseEnum>;
 
 export const changeTenantSchema = z.object({
   tenantId: z.coerce.number(),

@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { deleteProperty } from "@/server/property";
+import { deleteProperty } from "@/server/property/property";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 

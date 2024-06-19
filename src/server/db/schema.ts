@@ -128,6 +128,10 @@ export const property = createTable("property", {
   streetNumber: varchar("streetNumber", { length: 255 }),
   zipCode: integer("zipCode"),
   city: varchar("city", { length: 255 }),
+  waste: integer("waste"),
+  water: integer("water"),
+  basicFee: integer("basicFee"),
+  sewage: integer("sewage"),
 });
 
 export const tenants = createTable("tenants", {

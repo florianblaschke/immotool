@@ -49,9 +49,9 @@ import {
 import { cn } from "@/lib/utils";
 import { flatSchema } from "@/lib/validators";
 import type { Flat } from "@/server/db/schema";
-import { getPropertyById } from "@/server/property";
+import { getPropertyById } from "@/server/property/property";
 import { changeTenant, getAllTenants } from "@/server/tenants";
-import updateUnit from "@/server/units";
+import updateUnit from "@/server/property/units";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, ChevronsUpDown } from "lucide-react";

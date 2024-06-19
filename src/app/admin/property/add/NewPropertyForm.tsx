@@ -21,10 +21,10 @@ import {
 } from "@/components/ui/select";
 import {
   newPropertySchema,
-  type newPropertyTypeKeys,
+  type NewPropertyTypeKeys,
   validHeatingSystems,
 } from "@/lib/validators";
-import createProperty, { getPropertyById } from "@/server/property";
+import createProperty, { getPropertyById } from "@/server/property/property";
 import { translateHeatSystems } from "@/utils/maps";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -79,7 +79,7 @@ export default function NewPropertyForm() {
     if (data?.body) {
       Object.entries(data.body).map(([key, value]) =>
         form.setValue(
-          key as newPropertyTypeKeys,
+          key as NewPropertyTypeKeys,
           value as string | number | undefined,
         ),
       );

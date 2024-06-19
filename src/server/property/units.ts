@@ -1,10 +1,10 @@
 "use server";
 
 import { type z } from "zod";
-import { getServerAuthSession } from "./auth";
+import { getServerAuthSession } from "../auth";
 import { flatSchema } from "@/lib/validators";
-import { db } from "./db";
-import { unit, rentContract } from "./db/schema";
+import { db } from "../db";
+import { unit, rentContract } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 
 export default async function updateUnit(data: z.infer<typeof flatSchema>) {
