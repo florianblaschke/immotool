@@ -22,25 +22,6 @@ import { type AdapterAccount } from "next-auth/adapters";
  */
 export const createTable = pgTableCreator((name) => `immotool_${name}`);
 
-export const posts = createTable(
-  "post",
-  {
-    id: serial("id").primaryKey(),
-    name: varchar("name", { length: 256 }),
-    createdById: varchar("createdById", { length: 255 })
-      .notNull()
-      .references(() => users.id),
-    createdAt: timestamp("created_at")
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-    updatedAt: timestamp("updatedAt"),
-  },
-  (example) => ({
-    createdByIdIdx: index("createdById_idx").on(example.createdById),
-    nameIndex: index("name_idx").on(example.name),
-  }),
-);
-
 export const users = createTable("user", {
   id: varchar("id", { length: 255 }).notNull().primaryKey(),
   name: varchar("name", { length: 255 }),
@@ -134,6 +115,51 @@ export const property = createTable("property", {
   sewage: integer("sewage"),
 });
 
+export const propertyRelations = relations(property, ({ many }) => ({
+  unit: many(unit),
+  tenants: many(rentContract),
+  counter: many(counter),
+}));
+
+export const counterEnum = pgEnum("counter_type", [
+  "electricity",
+  "gas",
+  "water",
+]);
+
+export const counter = createTable("counter", {
+  id: serial("id").primaryKey(),
+  type: counterEnum("type").notNull(),
+  number: varchar("number").notNull().unique(),
+  propertyId: integer("propertyId")
+    .references(() => property.id, { onDelete: "cascade" })
+    .notNull(),
+});
+
+export const counterRelations = relations(counter, ({ one, many }) => ({
+  values: many(counterValues),
+  property: one(property, {
+    fields: [counter.propertyId],
+    references: [property.id],
+  }),
+}));
+
+export const counterValues = createTable("counterValues", {
+  id: serial("id").primaryKey(),
+  value: integer("value").notNull(),
+  valueDate: date("valueDate").notNull().defaultNow(),
+  counterValuesId: integer("counterValuesId")
+    .references(() => counter.id, { onDelete: "cascade" })
+    .notNull(),
+});
+
+export const counterValuesRelations = relations(counterValues, ({ one }) => ({
+  counter: one(counter, {
+    fields: [counterValues.counterValuesId],
+    references: [counter.id],
+  }),
+}));
+
 export const tenants = createTable("tenants", {
   id: serial("id").primaryKey(),
   firstName: varchar("firstName", { length: 30 }).notNull(),
@@ -142,6 +168,10 @@ export const tenants = createTable("tenants", {
   mobile: varchar("mobile", { length: 255 }),
   email: varchar("email", { length: 255 }),
 });
+
+export const tenantsRelation = relations(tenants, ({ many }) => ({
+  rentContract: many(rentContract),
+}));
 
 export const rentContract = createTable("rentTime", {
   id: serial("id").primaryKey(),
@@ -167,11 +197,6 @@ export const unit = createTable("unit", {
   activeRentDetailsId: integer("activeRentDetailsId"),
 });
 
-export const propertyRelations = relations(property, ({ many }) => ({
-  unit: many(unit),
-  tenants: many(rentContract),
-}));
-
 export const unitRelation = relations(unit, ({ one, many }) => ({
   property: one(property, {
     fields: [unit.propertyId],
@@ -183,21 +208,6 @@ export const unitRelation = relations(unit, ({ one, many }) => ({
     references: [tenants.id],
   }),
   rentContract: many(rentContract),
-}));
-
-export const tenantsRelation = relations(tenants, ({ many }) => ({
-  rentContract: many(rentContract),
-}));
-
-export const rentContractRelation = relations(rentContract, ({ one }) => ({
-  tenants: one(tenants, {
-    fields: [rentContract.tenantId],
-    references: [tenants.id],
-  }),
-  unit: one(unit, {
-    fields: [rentContract.unitId],
-    references: [unit.id],
-  }),
 }));
 
 export type Property = Omit<InferInsertModel<typeof property>, "id"> & {

@@ -98,7 +98,7 @@ export async function getPropertyById(id: number | undefined) {
 
     const property = await db.query.property.findFirst({
       where: (property, { eq }) => eq(property.id, id),
-      with: { unit: true },
+      with: { unit: true, counter: true },
     });
     return { message: "success", body: property };
   } catch (error) {

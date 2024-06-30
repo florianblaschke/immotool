@@ -45,6 +45,13 @@ export const tenantSchema = z.object({
   propertyId: z.coerce.number().optional(),
 });
 
+export const counterSchema = z.object({
+  type: z.enum(["electricity", "gas", "water"]),
+  number: z.string(),
+  value: z.coerce.number(),
+  valueDate: z.date(),
+});
+
 export const expensesSchema = z.object({
   waste: z.coerce.number(),
   water: z.coerce.number(),
