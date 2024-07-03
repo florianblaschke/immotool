@@ -29,6 +29,7 @@ import {
 import { deleteProperty } from "@/server/property/property";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import Link from "next/link";
 
 export default function OverviewTable({
   properties,
@@ -64,14 +65,22 @@ export default function OverviewTable({
         {properties.map((entry) => (
           <TableRow key={entry.id}>
             <TableCell className="font-medium">
-              {entry.street + " " + entry.streetNumber}
+              <Link href={"/admin/property/" + entry.id}>
+                {entry.street + " " + entry.streetNumber}
+              </Link>
             </TableCell>
-            <TableCell>{entry.zipCode + " " + entry.city}</TableCell>
-            <TableCell className="hidden md:table-cell">
-              {entry.units}
+            <TableCell>
+              <Link href={"/admin/property/" + entry.id}>
+                {entry.zipCode + " " + entry.city}
+              </Link>
             </TableCell>
             <TableCell className="hidden md:table-cell">
-              {entry.commercial}
+              <Link href={"/admin/property/" + entry.id}>{entry.units}</Link>
+            </TableCell>
+            <TableCell className="hidden md:table-cell">
+              <Link href={"/admin/property/" + entry.id}>
+                {entry.commercial}
+              </Link>
             </TableCell>
             <TableCell>
               <Dialog onOpenChange={setOpen} open={open}>

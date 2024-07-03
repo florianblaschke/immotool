@@ -41,10 +41,10 @@ export default async function Property() {
             <OverviewTable properties={properties} />
           </CardContent>
           <CardFooter>
-            <div className="text-xs text-muted-foreground">
+            {/* <div className="text-xs text-muted-foreground">
               Zeige <strong>1</strong> von <strong>{properties.length}</strong>{" "}
               Liegenschaften
-            </div>
+            </div> */}
           </CardFooter>
         </Card>
       </div>

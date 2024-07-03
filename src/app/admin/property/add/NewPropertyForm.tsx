@@ -1,7 +1,6 @@
 "use client";
 
 import { queryClient } from "@/components/providers/QueryProvider";
-import { useStatus } from "@/components/providers/StatusProvider";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -19,20 +18,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  newPropertySchema,
-  type NewPropertyTypeKeys,
-  validHeatingSystems,
-} from "@/lib/validators";
-import createProperty, { getPropertyById } from "@/server/property/property";
+import { newPropertySchema, validHeatingSystems } from "@/lib/validators";
+import createProperty from "@/server/property/property";
 import { translateHeatSystems } from "@/utils/maps";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { type z } from "zod";
 
 export default function NewPropertyForm() {
+  const router = useRouter();
   const form = useForm<z.infer<typeof newPropertySchema>>({
     defaultValues: {
       capacity: 0,
@@ -47,8 +44,6 @@ export default function NewPropertyForm() {
     resolver: zodResolver(newPropertySchema),
   });
 
-  const values = useStatus();
-
   const refetchProperties = () => {
     void queryClient.invalidateQueries({ queryKey: ["property"] });
   };
@@ -61,30 +56,11 @@ export default function NewPropertyForm() {
           description: res.error,
         });
       }
-      if (values) {
-        values.setStatus(true);
-        res?.data ? values.setPropertyId(res?.data) : null;
-      }
       refetchProperties();
+      router.push(`${res?.body}`);
       return toast.success("Das hat geklappt");
     },
   });
-
-  const { data } = useQuery({
-    queryFn: () => getPropertyById(values?.propertyId),
-    queryKey: ["property"],
-  });
-
-  if (values?.status === true && values.propertyId) {
-    if (data?.body) {
-      Object.entries(data.body).map(([key, value]) =>
-        form.setValue(
-          key as NewPropertyTypeKeys,
-          value as string | number | undefined,
-        ),
-      );
-    }
-  }
 
   return (
     <Form {...form}>
@@ -100,11 +76,7 @@ export default function NewPropertyForm() {
               <FormItem className="col-span-3">
                 <FormLabel>Straße</FormLabel>
                 <FormControl>
-                  <Input
-                    type="string"
-                    {...field}
-                    disabled={values?.status === true}
-                  />
+                  <Input type="string" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -117,11 +89,7 @@ export default function NewPropertyForm() {
               <FormItem className="col-span-2">
                 <FormLabel>Nummer</FormLabel>
                 <FormControl>
-                  <Input
-                    type="text"
-                    {...field}
-                    disabled={values?.status === true}
-                  />
+                  <Input type="text" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -134,12 +102,7 @@ export default function NewPropertyForm() {
               <FormItem className="col-span-2">
                 <FormLabel>PLZ</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    min={10000}
-                    {...field}
-                    disabled={values?.status === true}
-                  />
+                  <Input type="number" min={10000} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -152,11 +115,7 @@ export default function NewPropertyForm() {
               <FormItem className="col-span-2">
                 <FormLabel>Stadt</FormLabel>
                 <FormControl>
-                  <Input
-                    type="string"
-                    {...field}
-                    disabled={values?.status === true}
-                  />
+                  <Input type="string" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -171,12 +130,7 @@ export default function NewPropertyForm() {
               <FormItem>
                 <FormLabel>Wohneinheiten</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    {...field}
-                    disabled={values?.status === true}
-                  />
+                  <Input type="number" min={0} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -189,12 +143,7 @@ export default function NewPropertyForm() {
               <FormItem>
                 <FormLabel>Gewerblich</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    {...field}
-                    disabled={values?.status === true}
-                  />
+                  <Input type="number" min={0} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -209,11 +158,7 @@ export default function NewPropertyForm() {
               <FormItem className="grid w-full grid-cols-2 gap-4 space-y-0">
                 <div className="space-y-2">
                   <FormLabel>Heizungsart</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={values?.status === true}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="mt-2">
                       <FormControl>
                         <SelectValue
@@ -240,12 +185,7 @@ export default function NewPropertyForm() {
                       <FormItem>
                         <FormLabel>Tankvolumen in l</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            {...field}
-                            disabled={values?.status === true}
-                          />
+                          <Input type="number" min={0} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -256,7 +196,7 @@ export default function NewPropertyForm() {
             </div>
           )}
         />
-        <Button type="submit" disabled={isPending || values?.status === true}>
+        <Button type="submit" disabled={isPending}>
           Anlegen
         </Button>
       </form>

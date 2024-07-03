@@ -63,7 +63,7 @@ export default async function createProperty(
       }
     });
     revalidatePath("/admin/property");
-    return { message: "success", data: propertyId };
+    return { message: "success", body: propertyId };
   } catch (error) {
     if (error instanceof ActionError) {
       if (error.cause === 401)

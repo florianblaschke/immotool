@@ -1,6 +1,5 @@
 "use client";
 
-import { useStatus } from "@/components/providers/StatusProvider";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -20,8 +19,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { type z } from "zod";
 
-export default function ExpensesForm() {
-  const values = useStatus();
+export default function ExpensesForm({ id }: { id: number }) {
   const { mutate, isPending } = useMutation({
     mutationFn: updateExpenses,
     mutationKey: ["property"],
@@ -32,7 +30,7 @@ export default function ExpensesForm() {
   });
 
   const { data } = useQuery({
-    queryFn: () => getPropertyById(values?.propertyId),
+    queryFn: () => getPropertyById(id),
     queryKey: ["property"],
   });
 
@@ -49,9 +47,7 @@ export default function ExpensesForm() {
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit((data) =>
-          mutate({ data, id: values?.propertyId }),
-        )}
+        onSubmit={form.handleSubmit((data) => mutate({ data, id }))}
         className="flex w-full max-w-sm flex-col gap-4"
       >
         <FormField

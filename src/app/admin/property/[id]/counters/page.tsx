@@ -1,6 +1,5 @@
 "use client";
 
-import { useStatus } from "@/components/providers/StatusProvider";
 import SheetDrawerComponent from "@/components/SheetDrawerComponent";
 import {
   Select,
@@ -14,12 +13,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import CounterForm from "./CounterForm";
 
-export default function CountersPage() {
-  const values = useStatus();
+export default function CountersPage({ params }: { params: { id: number } }) {
   const [selectValue, setSelectValue] = useState<string>("Wähle einen Zähler");
 
   const { data } = useQuery({
-    queryFn: () => getPropertyById(values?.propertyId),
+    queryFn: () => getPropertyById(params.id),
     queryKey: ["property"],
   });
 

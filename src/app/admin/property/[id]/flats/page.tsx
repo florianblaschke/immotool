@@ -1,6 +1,7 @@
 "use client";
 
-import { useStatus } from "@/components/providers/StatusProvider";
+import SheetDrawerComponent from "@/components/SheetDrawerComponent";
+import TenantForm from "@/components/TenantForm";
 import {
   Select,
   SelectContent,
@@ -12,19 +13,16 @@ import { getPropertyById } from "@/server/property/property";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import UnitForm from "./UnitForm";
-import SheetDrawerComponent from "@/components/SheetDrawerComponent";
-import TenantForm from "@/components/TenantForm";
 
-export default function FlatsPage() {
+export default function FlatsPage({ params }: { params: { id: number } }) {
   const [selectValue, setSelectValue] = useState<string>("1");
-  const values = useStatus();
 
   const { data, isLoading, isError } = useQuery({
-    queryFn: () => getPropertyById(values?.propertyId),
+    queryFn: () => getPropertyById(params.id),
     queryKey: ["property"],
   });
 
-  if (!data || isError || isLoading || !values) return;
+  if (!data || isError || isLoading) return;
 
   const { body: property } = data;
 
