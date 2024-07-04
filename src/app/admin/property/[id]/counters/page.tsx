@@ -56,7 +56,7 @@ export default function CountersPage({ params }: { params: { id: number } }) {
           </Select>
         </div>
         <SheetDrawerComponent title="Neuer Zähler">
-          <CounterForm />
+          <CounterForm id={params.id} />
         </SheetDrawerComponent>
       </div>
     </div>

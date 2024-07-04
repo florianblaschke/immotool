@@ -1,7 +1,5 @@
 "use client";
 
-import { queryClient } from "@/components/providers/QueryProvider";
-import { useStatus } from "@/components/providers/StatusProvider";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -22,13 +20,13 @@ import {
 import { counterSchema } from "@/lib/validators";
 import { createCounter } from "@/server/property/counters";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 
-export default function CounterForm() {
-  const values = useStatus();
+export default function CounterForm({ id }: { id: number }) {
+  const queryClient = useQueryClient();
   const options = [
     { type: "gas", name: "Gas" },
     { type: "water", name: "Wasser" },
@@ -65,9 +63,7 @@ export default function CounterForm() {
     <Form {...form}>
       <form
         className="flex w-full max-w-sm flex-col gap-4"
-        onSubmit={form.handleSubmit((data) =>
-          mutate({ data, propertyId: values?.propertyId }),
-        )}
+        onSubmit={form.handleSubmit((data) => mutate({ data, propertyId: id }))}
       >
         <FormField
           control={form.control}
