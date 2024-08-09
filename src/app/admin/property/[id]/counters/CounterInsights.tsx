@@ -37,7 +37,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { CirclePlus, LoaderCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { ReactElement } from "react";
+import { type ReactElement } from "react";
 import { useForm } from "react-hook-form";
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
 import { toast } from "sonner";
