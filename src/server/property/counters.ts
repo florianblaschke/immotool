@@ -119,7 +119,6 @@ export async function createCounterEntry({
     const session = await getServerAuthSession();
     if (!session)
       throw new Error("Du bist hierfür nicht berechtigt", { cause: 401 });
-    console.log(counterId, date, value);
     await db.insert(counterValues).values({
       value: Number(value),
       valueDate: date.toDateString(),

@@ -35,8 +35,9 @@ import { createCounterEntry, getCounterById } from "@/server/property/counters";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CirclePlus } from "lucide-react";
+import { CirclePlus, LoaderCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { ReactElement } from "react";
 import { useForm } from "react-hook-form";
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
 import { toast } from "sonner";
@@ -46,13 +47,19 @@ export default function CounterInsights() {
   const [number] = useSearchParams().getAll("number");
   const counterNumber = number;
 
-  const { data } = useQuery({
+  const { data, status } = useQuery({
     queryKey: ["counter", counterNumber],
     queryFn: async () => await getCounterById({ counterNumber }),
   });
 
-  if (!counterNumber) return <p>Loading</p>;
-  if (!data) return <p>Keine Daten für diesen Zähler gefunden</p>;
+  if (!counterNumber && status === "error")
+    return <ChartSkeleton message="Bitte wähle einen Zähler aus" />;
+  if (!data)
+    return (
+      <ChartSkeleton
+        message={<LoaderCircle className="animate-spin repeat-infinite" />}
+      />
+    );
 
   const chartData = data.body?.values.map((entry) => ({
     year: `${new Date(entry.valueDate).getFullYear()}/${new Date(entry.valueDate).getMonth()}`,
@@ -201,5 +208,15 @@ function AddCounterEntryForm({
         </Form>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function ChartSkeleton({ message }: { message: string | ReactElement }) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col items-center justify-center md:min-h-[398px]">
+        {message}
+      </CardContent>
+    </Card>
   );
 }
