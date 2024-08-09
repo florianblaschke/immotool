@@ -32,7 +32,7 @@ export default function FlatsPage({ params }: { params: { id: number } }) {
 
   return (
     <div className="flex h-full w-full flex-1 flex-col">
-      <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+      <div className="flex flex-1 flex-col gap-4 px-4 md:gap-8 md:px-8">
         <div className="flex w-full max-w-sm flex-col gap-4">
           <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
             Wohnungnummer

@@ -17,7 +17,7 @@ export default async function CountersPage({
 
   return (
     <div className="flex h-full w-full flex-1 flex-col">
-      <div className="flex flex-1 flex-col gap-4 px-4 md:gap-8 md:px-8">
+      <div className="flex flex-1 flex-col gap-4 md:gap-8 md:px-8">
         <div className="flex w-full max-w-sm flex-col gap-4">
           <ul className="max-h-[350px] space-y-4 overflow-y-auto">
             {data?.body?.counter.map((counter) => (

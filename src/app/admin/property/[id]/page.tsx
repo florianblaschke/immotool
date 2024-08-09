@@ -27,7 +27,7 @@ export default async function PropertyDetailPage({
 
   return (
     <div>
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 md:px-8">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle>Property Details</CardTitle>
