@@ -6,7 +6,7 @@ export const translateHeatSystems: Record<string, string> = {
 };
 
 export const counterMap: Record<string, string> = {
-  gas: "Gas",
-  water: "Wasser",
-  electricity: "Strom",
+  gas: "Gaszähler",
+  water: "Wasserzähler",
+  electricity: "Stromzähler",
 };

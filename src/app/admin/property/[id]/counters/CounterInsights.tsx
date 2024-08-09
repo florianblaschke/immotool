@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -13,37 +15,53 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { getCounterById } from "@/server/property/counters";
-import { useQuery } from "@tanstack/react-query";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { counterValueSchema } from "@/lib/validators";
+import { createCounterEntry, getCounterById } from "@/server/property/counters";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { CirclePlus } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { useForm } from "react-hook-form";
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
+import { toast } from "sonner";
+import type { z } from "zod";
 
 export default function CounterInsights() {
   const [number] = useSearchParams().getAll("number");
+  const counterNumber = number;
 
   const { data } = useQuery({
-    queryKey: ["counter", number],
-    queryFn: async () => await getCounterById({ number: String(number) }),
+    queryKey: ["counter", counterNumber],
+    queryFn: async () => await getCounterById({ counterNumber }),
   });
 
-  console.log(data);
+  if (!counterNumber) return <p>Loading</p>;
+  if (!data) return <p>Keine Daten für diesen Zähler gefunden</p>;
 
-  const chartData = [
-    { month: "January", desktop: 186, mobile: 80 },
-    { month: "February", desktop: 305, mobile: 200 },
-    { month: "March", desktop: 237, mobile: 120 },
-    { month: "April", desktop: 73, mobile: 190 },
-    { month: "May", desktop: 209, mobile: 130 },
-    { month: "June", desktop: 214, mobile: 140 },
-  ];
+  const chartData = data.body?.values.map((entry) => ({
+    year: `${new Date(entry.valueDate).getFullYear()}/${new Date(entry.valueDate).getMonth()}`,
+    value: entry.value,
+  }));
 
   const chartConfig = {
-    desktop: {
-      label: "Desktop",
-      color: "hsl(var(--chart-1))",
-    },
-    mobile: {
-      label: "Mobile",
+    counter: {
+      label: "Zählerstand",
       color: "hsl(var(--chart-2))",
     },
   } satisfies ChartConfig;
@@ -51,8 +69,13 @@ export default function CounterInsights() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Zählerstände</CardTitle>
-        <CardDescription></CardDescription>
+        <div className="flex w-full justify-between">
+          <CardTitle>Zählerstände</CardTitle>
+          <AddCounterEntryForm counterNumber={data.body?.id} />
+        </div>
+        <CardDescription>
+          <span>Zählernummer: {counterNumber}</span>
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="min-h-0">
@@ -66,35 +89,117 @@ export default function CounterInsights() {
           >
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey="month"
+              dataKey="year"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => {
-                if (typeof value === "string") {
-                  return value?.slice(0, 3);
-                }
-                return "";
-              }}
             />
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <Line
-              dataKey="desktop"
-              type="monotone"
-              stroke="var(--color-desktop)"
-              strokeWidth={2}
-              dot={false}
-            />
-            <Line
-              dataKey="mobile"
-              type="monotone"
-              stroke="var(--color-mobile)"
-              strokeWidth={2}
-              dot={false}
-            />
+            <Line dataKey="value" type="monotone" strokeWidth={2} dot={false} />
           </LineChart>
         </ChartContainer>
       </CardContent>
     </Card>
+  );
+}
+
+function AddCounterEntryForm({
+  counterNumber,
+}: {
+  counterNumber: number | undefined;
+}) {
+  const queryClient = useQueryClient();
+  const { mutate, isPending } = useMutation({
+    mutationFn: createCounterEntry,
+    onSuccess: (res) => {
+      if (!res || res?.message !== "success") {
+        return toast.error(res?.error);
+      }
+      void queryClient.invalidateQueries();
+      return toast.success("Das hat geklappt.");
+    },
+  });
+
+  const form = useForm<z.infer<typeof counterValueSchema>>({
+    defaultValues: { date: new Date(), value: 0 },
+    resolver: zodResolver(counterValueSchema),
+  });
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button size="icon">
+          <CirclePlus />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[200px] p-6" align="end">
+        <Form {...form}>
+          <form
+            className="space-y-4"
+            onSubmit={form.handleSubmit((val) =>
+              mutate({
+                date: val.date,
+                counterId: Number(counterNumber),
+                value: val.value,
+              }),
+            )}
+          >
+            <FormField
+              name="date"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Ablesedatum</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground",
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="value"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Zählerstand</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" min={0} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button disabled={isPending} type="submit" className="w-full">
+              Eintragen
+            </Button>
+          </form>
+        </Form>
+      </PopoverContent>
+    </Popover>
   );
 }

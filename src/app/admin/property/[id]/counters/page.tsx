@@ -4,11 +4,14 @@ import { getPropertyById } from "@/server/property/property";
 import CounterForm from "./CounterForm";
 import { counterMap } from "@/utils/maps";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default async function CountersPage({
   params,
+  searchParams,
 }: {
   params: { id: number };
+  searchParams: { number: string };
 }) {
   const data = await getPropertyById(params.id);
 
@@ -16,18 +19,28 @@ export default async function CountersPage({
     <div className="flex h-full w-full flex-1 flex-col">
       <div className="flex flex-1 flex-col gap-4 px-4 md:gap-8 md:px-8">
         <div className="flex w-full max-w-sm flex-col gap-4">
-          <ul className="space-y-4">
+          <ul className="max-h-[350px] space-y-4 overflow-y-auto">
             {data?.body?.counter.map((counter) => (
               <li key={counter.id}>
-                <Card className="space-y-4 p-4 text-sm">
+                <Card
+                  className={cn(
+                    "space-y-4 p-4 text-sm",
+                    searchParams.number === counter.number &&
+                      "bg-primary text-muted",
+                  )}
+                >
                   <Link href={`?number=${counter.number}`}>
-                    <p>
-                      <span className="font-bold">Nummer: </span>
-                      {counter.number}
-                    </p>
-                    <p>
-                      <span className="font-bold">Typ: </span>
+                    <p className="text-base font-medium">
                       {counterMap[counter.type]}
+                    </p>
+                    <p
+                      className={cn(
+                        "text-xs text-muted-foreground",
+                        searchParams.number === counter.number &&
+                          "bg-primary text-muted",
+                      )}
+                    >
+                      Nr: {counter.number}
                     </p>
                   </Link>
                 </Card>

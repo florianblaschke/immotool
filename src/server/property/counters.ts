@@ -78,17 +78,55 @@ export async function setCounterValue({
   }
 }
 
-export async function getCounterById({ number }: { number: string }) {
+export async function getCounterById({
+  counterNumber,
+}: {
+  counterNumber: string | undefined;
+}) {
   try {
     const session = await getServerAuthSession();
     if (!session)
       throw new Error("Du bist hierfür nicht berechtigt", { cause: 401 });
 
+    if (!counterNumber)
+      throw new Error(
+        `Zähler mit der Nummber ${counterNumber} konnte nicht gefunden werden.`,
+      );
+
     const counter = await db.query.counter.findFirst({
-      where: (counter, { eq }) => eq(counter.number, number),
+      where: (counter, { eq }) => eq(counter.number, counterNumber),
+      with: { values: true },
     });
 
-    return counter;
+    return { message: "success", body: counter };
+  } catch (error) {
+    if (error instanceof Error) {
+      return { message: "error", error: error.message };
+    }
+  }
+}
+
+export async function createCounterEntry({
+  counterId,
+  date,
+  value,
+}: {
+  counterId: number;
+  value: number;
+  date: Date;
+}) {
+  try {
+    const session = await getServerAuthSession();
+    if (!session)
+      throw new Error("Du bist hierfür nicht berechtigt", { cause: 401 });
+    console.log(counterId, date, value);
+    await db.insert(counterValues).values({
+      value: Number(value),
+      valueDate: date.toDateString(),
+      counterValuesId: counterId,
+    });
+
+    return { message: "success" };
   } catch (error) {
     if (error instanceof Error) {
       return { message: "error", error: error.message };

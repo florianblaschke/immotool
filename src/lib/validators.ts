@@ -70,3 +70,8 @@ export const changeTenantSchema = z.object({
 });
 
 export type ExpensesType = z.infer<typeof expensesSchema>;
+
+export const counterValueSchema = z.object({
+  value: z.coerce.number().nonnegative(),
+  date: z.date(),
+});
