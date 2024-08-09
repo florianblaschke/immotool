@@ -1,6 +1,5 @@
 "use client";
 
-import { queryClient } from "@/components/providers/QueryProvider";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -28,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Command,
   CommandEmpty,
@@ -48,6 +47,7 @@ export default function UnitForm({
 }: {
   flat: Omit<Flat, "id"> & { id: number };
 }) {
+  const queryClient = useQueryClient();
   const form = useForm<z.infer<typeof flatSchema>>({
     values: {
       id: flat.id,

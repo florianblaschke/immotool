@@ -20,32 +20,27 @@ import {
 import { counterSchema } from "@/lib/validators";
 import { createCounter } from "@/server/property/counters";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 
 export default function CounterForm({ id }: { id: number }) {
-  const queryClient = useQueryClient();
-  const options = [
+  const counterOptions = [
     { type: "gas", name: "Gas" },
     { type: "water", name: "Wasser" },
     { type: "electricity", name: "Strom" },
   ];
-
-  const refetchCounters = () => {
-    void queryClient.invalidateQueries({ queryKey: ["property"] });
-  };
+  const router = useRouter();
 
   const { mutate, isPending } = useMutation({
     mutationFn: createCounter,
     mutationKey: ["counter"],
     onSuccess: (res) => {
-      if (res?.message === "success") {
-        refetchCounters();
-        return toast.success("Das hat geklappt");
-      }
-      toast.error(res?.error);
+      if (res?.message === "error") return toast.error(res?.error);
+      router.refresh();
+      toast.success("Das hat geklappt");
     },
   });
 
@@ -78,7 +73,7 @@ export default function CounterForm({ id }: { id: number }) {
                   </FormControl>
                 </SelectTrigger>
                 <SelectContent>
-                  {options.map((entry) => (
+                  {counterOptions.map((entry) => (
                     <SelectItem value={entry.type} key={entry.type}>
                       {entry.name}
                     </SelectItem>

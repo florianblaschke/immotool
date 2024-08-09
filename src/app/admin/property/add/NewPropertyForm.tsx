@@ -1,6 +1,5 @@
 "use client";
 
-import { queryClient } from "@/components/providers/QueryProvider";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -22,13 +21,14 @@ import { newPropertySchema, validHeatingSystems } from "@/lib/validators";
 import createProperty from "@/server/property/property";
 import { translateHeatSystems } from "@/utils/maps";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { type z } from "zod";
 
 export default function NewPropertyForm() {
+  const queryClient = useQueryClient();
   const router = useRouter();
   const form = useForm<z.infer<typeof newPropertySchema>>({
     defaultValues: {

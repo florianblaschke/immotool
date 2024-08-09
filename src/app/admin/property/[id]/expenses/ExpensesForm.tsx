@@ -11,36 +11,40 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { expensesSchema } from "@/lib/validators";
+import { type Property } from "@/server/db/schema";
 import { updateExpenses } from "@/server/property/expenses";
-import { getPropertyById } from "@/server/property/property";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { type z } from "zod";
 
-export default function ExpensesForm({ id }: { id: number }) {
+export default function ExpensesForm({
+  id,
+  property,
+}: {
+  id: number;
+  property: Property | undefined;
+}) {
+  const router = useRouter();
   const { mutate, isPending } = useMutation({
     mutationFn: updateExpenses,
     mutationKey: ["property"],
     onSuccess: (res) => {
-      if (res?.message === "success") return toast.success("Das hat geklappt");
-      toast.error(res?.error);
+      if (res?.message === "error") return toast.error(res?.error);
+      router.refresh();
+      toast.success("Das hat geklappt");
     },
-  });
-
-  const { data } = useQuery({
-    queryFn: () => getPropertyById(id),
-    queryKey: ["property"],
   });
 
   const form = useForm<z.infer<typeof expensesSchema>>({
     resolver: zodResolver(expensesSchema),
     defaultValues: {
-      basicFee: data?.body?.basicFee ?? 0,
-      sewage: data?.body?.sewage ?? 0,
-      waste: data?.body?.waste ?? 0,
-      water: data?.body?.water ?? 0,
+      basicFee: property?.basicFee ?? 0,
+      sewage: property?.sewage ?? 0,
+      waste: property?.waste ?? 0,
+      water: property?.water ?? 0,
     },
   });
 

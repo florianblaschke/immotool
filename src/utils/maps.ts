@@ -4,3 +4,9 @@ export const translateHeatSystems: Record<string, string> = {
   gas: "Gas",
   heatpump: "Wärmepumpe",
 };
+
+export const counterMap: Record<string, string> = {
+  gas: "Gas",
+  water: "Wasser",
+  electricity: "Strom",
+};

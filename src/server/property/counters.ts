@@ -77,3 +77,21 @@ export async function setCounterValue({
     }
   }
 }
+
+export async function getCounterById({ number }: { number: string }) {
+  try {
+    const session = await getServerAuthSession();
+    if (!session)
+      throw new Error("Du bist hierfür nicht berechtigt", { cause: 401 });
+
+    const counter = await db.query.counter.findFirst({
+      where: (counter, { eq }) => eq(counter.number, number),
+    });
+
+    return counter;
+  } catch (error) {
+    if (error instanceof Error) {
+      return { message: "error", error: error.message };
+    }
+  }
+}

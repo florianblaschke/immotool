@@ -1,11 +1,10 @@
 import { tenantSchema } from "@/lib/validators";
 import { createTenant } from "@/server/tenants";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { type z } from "zod";
-import { queryClient } from "./providers/QueryProvider";
 import { Button } from "./ui/button";
 import {
   Form,
@@ -22,6 +21,8 @@ export default function TenantForm({
 }: {
   closeMenu?: (x: boolean) => void;
 }) {
+  const queryClient = useQueryClient();
+
   const form = useForm<z.infer<typeof tenantSchema>>({
     resolver: zodResolver(tenantSchema),
     defaultValues: {

@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { ZodError, type z } from "zod";
 import { getServerAuthSession } from "../auth";
 import { db } from "../db";
-import { type Flat, unit, property } from "../db/schema";
+import { property, unit, type Flat } from "../db/schema";
 
 export default async function createProperty(
   data: z.infer<typeof newPropertySchema>,
