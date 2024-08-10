@@ -1,6 +1,7 @@
 "use client";
 
-import { buttonVariants } from "@/components/ui/button";
+import SheetDrawerComponent from "@/components/SheetDrawerComponent";
+import TenantForm from "@/components/TenantForm";
 import {
   Card,
   CardContent,
@@ -18,58 +19,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-import { CirclePlus, Link } from "lucide-react";
+import { getAllTenants } from "@/server/tenants";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import TentantTable from "./Tenanttable";
+
 export default function TenantePage() {
-  const tenants = useMemo(
-    () => [
-      {
-        id: "T001",
-        name: "John Doe",
-        email: "john@example.com",
-        address: "123 Main St, Anytown USA",
-        property: "Apartment A",
-      },
-      {
-        id: "T002",
-        name: "Jane Smith",
-        email: "jane@example.com",
-        address: "456 Oak Rd, Somewhere City",
-        property: "House B",
-      },
-      {
-        id: "T003",
-        name: "Bob Johnson",
-        email: "bob@example.com",
-        address: "789 Elm St, Elsewhere Town",
-        property: "Apartment A",
-      },
-      {
-        id: "T004",
-        name: "Sarah Lee",
-        email: "sarah@example.com",
-        address: "321 Pine Ave, Somewhere Else",
-        property: "House B",
-      },
-      {
-        id: "T005",
-        name: "Tom Wilson",
-        email: "tom@example.com",
-        address: "654 Maple Ln, Anytown USA",
-        property: "Apartment A",
-      },
-    ],
-    [],
-  );
+  const { data } = useQuery({
+    queryKey: ["allTenants"],
+    queryFn: async () => await getAllTenants(),
+  });
+
+  const tenants = useMemo(() => {
+    if (!data?.body) return [];
+    return data.body;
+  }, [data]);
 
   return (
     <div className="flex h-full w-full flex-1 flex-col">
@@ -79,17 +43,13 @@ export default function TenantePage() {
             <CardTitle>Mieter</CardTitle>
             <CardDescription className="flex w-full flex-col items-start justify-between gap-y-4 md:flex-row md:items-center">
               <span>Mieterdaten und Verträge verwalten</span>
-              <Link
-                className={cn(buttonVariants({ variant: "default" }), "gap-4")}
-                href="/admin/property/add"
-              >
-                <CirclePlus />
-                Neuen Mieter anlegen
-              </Link>
+              <SheetDrawerComponent title="Neuen Mieter anlegen">
+                <TenantForm />
+              </SheetDrawerComponent>
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div>
                 <Label htmlFor="search">Search</Label>
                 <Input
@@ -113,26 +73,7 @@ export default function TenantePage() {
               </div>
             </div>
             <div className="rounded-lg bg-background">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Property</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tenants.map((tenant) => (
-                    <TableRow key={tenant.id}>
-                      <TableCell>{tenant.name}</TableCell>
-                      <TableCell>{tenant.email}</TableCell>
-                      <TableCell>{tenant.address}</TableCell>
-                      <TableCell>{tenant.property}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <TentantTable data={tenants} />
             </div>
           </CardContent>
           <CardFooter>

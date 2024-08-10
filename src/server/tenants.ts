@@ -9,8 +9,27 @@ import { eq } from "drizzle-orm";
 
 export async function getAllTenants() {
   try {
+    const session = await getServerAuthSession();
+    if (!session) throw new Error("Du bist nicht berechtigt.");
+
     const tenants = await db.query.tenants.findMany();
     return { message: "success", body: tenants };
+  } catch (error) {
+    if (error instanceof Error)
+      return { message: "error", error: error.message };
+  }
+}
+
+export async function getTenantById({ id }: { id: number }) {
+  try {
+    const session = await getServerAuthSession();
+    if (!session) throw new Error("Du bist nicht berechtigt.");
+
+    const tenant = await db.query.tenants.findFirst({
+      where: (tenants, { eq }) => eq(tenants.id, id),
+      with: { rentContract: true },
+    });
+    return { message: "success", body: tenant };
   } catch (error) {
     if (error instanceof Error)
       return { message: "error", error: error.message };

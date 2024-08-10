@@ -183,6 +183,13 @@ export const rentContract = createTable("rentTime", {
   tenantId: integer("tenantId").notNull(),
 });
 
+export const rentContractRelations = relations(rentContract, ({ one }) => ({
+  tenants: one(tenants, {
+    fields: [rentContract.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
 export const flatTypeEnum = pgEnum("flat_type", ["normal", "commercial"]);
 
 export const unit = createTable("unit", {

@@ -14,3 +14,11 @@ export class ActionError extends Error {
     (this.name = "ActionError"), (this.cause = options.code);
   }
 }
+
+export function firstLetterToUpperCase(firstName: string, lastName: string) {
+  if (!firstName[0] || !lastName[0]) return;
+  const firstLetter = firstName[0].toLocaleUpperCase();
+  const lastLetter = lastName[0].toLocaleUpperCase();
+
+  return firstLetter + lastLetter;
+}
