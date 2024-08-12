@@ -1,25 +1,17 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { cn } from "@/lib/utils";
-import { flatSchema } from "@/lib/validators";
-import type { Flat } from "@/server/db/schema";
-import updateUnit from "@/server/property/units";
-import { changeTenant, getAllTenants } from "@/server/tenants";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -27,89 +19,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { unitSchema } from "@/lib/validators";
+import type { Unit } from "@/server/db/schema";
+import updateUnit from "@/server/property/units";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 
 export default function UnitForm({
-  flat,
+  unit,
 }: {
-  flat: Omit<Flat, "id"> & { id: number };
+  unit: Omit<Unit, "id"> & { id: number };
 }) {
   const queryClient = useQueryClient();
-  const form = useForm<z.infer<typeof flatSchema>>({
+  const form = useForm<z.infer<typeof unitSchema>>({
     values: {
-      id: flat.id,
-      size: flat.size ?? 0,
-      type: flat.type,
-      activeTenant: flat.activeTenantId,
-      coldRent: 0,
-      utilityRent: 0,
+      id: unit.id,
+      size: unit.size ?? 0,
+      type: unit.type,
+      coldRent: unit.coldRent ?? 0,
+      utilityRent: unit.utilityRent ?? 0,
+      parkingRent: unit.parkingRent ?? 0,
+      cellarRent: unit.cellarRent ?? 0,
+      others: unit.others ?? [],
+      bedRooms: unit.bedRooms ?? "0",
+      baths: unit.baths ?? "0",
+      floor: unit.floor ?? "0",
+      kitchens: unit.kitchens ?? "0",
+      livingRooms: unit.livingRooms ?? "0",
+      description: unit.description ?? "",
     },
-    resolver: zodResolver(flatSchema),
+    resolver: zodResolver(unitSchema),
   });
 
-  const { data: tenants } = useQuery({
-    queryFn: async () => await getAllTenants(),
-    queryKey: ["tenants"],
-  });
-
-  const refetchProperty = () => {
-    void queryClient.invalidateQueries({ queryKey: ["property"] });
-  };
-
-  const { mutate: change } = useMutation({
-    mutationFn: async () =>
-      await changeTenant({
-        flatId: flat.id,
-        tenantId: form.getValues("activeTenant")!,
-        coldRent: form.getValues("coldRent"),
-        utilityRent: form.getValues("utilityRent"),
-      }),
-    onSuccess: (res) => {
-      if (res?.message === "error") {
-        return toast.error(res.error);
-      }
-      toast.success("Das hat geklappt");
-    },
-  });
+  const others = [
+    { id: "cellar", label: "Keller" },
+    { id: "elevator", label: "Aufzug" },
+    { id: "parkingSpot", label: "Parkplatz" },
+  ];
 
   const { mutate } = useMutation({
     mutationFn: updateUnit,
     onSuccess: (res) => {
       if (res?.message === "error") {
-        if (res.cause === 501)
-          return toast.error(res.error, {
-            action: {
-              label: "Mieter ändern",
-              onClick: () => change(),
-            },
-          });
         return toast.error(res.error);
       }
-      refetchProperty();
+      void queryClient.invalidateQueries({ queryKey: ["property"] });
       toast.success("Das hat geklappt");
     },
   });
 
+  function onSubmit(data: z.infer<typeof unitSchema>) {
+    console.log("DATA", data);
+    mutate(data);
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      <Form {...form}>
-        <form
-          className="flex w-full max-w-sm flex-col gap-4"
-          onSubmit={form.handleSubmit((data) => mutate(data))}
-        >
+    <Form {...form}>
+      <form className="grid gap-6" onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="grid grid-cols-2 gap-4">
           <FormField
             name="id"
             control={form.control}
@@ -127,7 +98,9 @@ export default function UnitForm({
             control={form.control}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Größe in qm</FormLabel>
+                <FormLabel className="text-sm font-medium">
+                  Größe in qm
+                </FormLabel>
                 <FormControl>
                   <Input {...field} type="number" />
                 </FormControl>
@@ -156,105 +129,274 @@ export default function UnitForm({
               </FormItem>
             )}
           />
-          {tenants?.body && (
-            <FormField
-              control={form.control}
-              name="activeTenant"
-              render={({ field }) => {
-                const tenantToFind = tenants.body?.find(
-                  (tenant) => tenant.id === field.value,
-                );
-                return (
-                  <FormItem className="flex w-full flex-col pt-2">
-                    <FormLabel>Aktueller Mieter</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className={cn(
-                              " justify-between",
-                              !field.value && "text-muted-foreground",
-                            )}
-                          >
-                            {field.value
-                              ? tenantToFind?.firstName +
-                                " " +
-                                tenantToFind?.lastName
-                              : "Wähle einen Mieter"}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[310px] p-0" align="start">
-                        <Command>
-                          <CommandInput placeholder="Mieter suchen..." />
-                          <CommandEmpty>Keinen Mieter gefunden.</CommandEmpty>
-                          <CommandList>
-                            <CommandGroup>
-                              {tenants.body?.map((tenant) => (
-                                <CommandItem
-                                  value={
-                                    tenant.firstName + " " + tenant.lastName
-                                  }
-                                  key={tenant.id}
-                                  onSelect={() => {
-                                    form.setValue("activeTenant", tenant.id);
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      tenant.id === field.value
-                                        ? "opacity-100"
-                                        : "opacity-0",
-                                    )}
-                                  />
-                                  {tenant.firstName + " " + tenant.lastName}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </FormItem>
-                );
-              }}
-            />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            name="baths"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Bäder</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <FormControl>
+                      <SelectValue {...field} />
+                    </FormControl>
+                    <SelectContent>
+                      {Array.from({ length: 6 }).map((entry, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {String(i)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectTrigger>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="bedRooms"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Schlafzimmer</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <FormControl>
+                      <SelectValue {...field} />
+                    </FormControl>
+                    <SelectContent>
+                      {Array.from({ length: 6 }).map((entry, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {String(i)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectTrigger>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="kitchens"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Küchen</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <FormControl>
+                      <SelectValue {...field} />
+                    </FormControl>
+                    <SelectContent>
+                      {Array.from({ length: 6 }).map((entry, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {String(i)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectTrigger>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="baths"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Bäder</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <FormControl>
+                      <SelectValue {...field} />
+                    </FormControl>
+                    <SelectContent>
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {String(i)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectTrigger>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="livingRooms"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Wohnzimmer</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <FormControl>
+                      <SelectValue {...field} />
+                    </FormControl>
+                    <SelectContent>
+                      {Array.from({ length: 6 }).map((entry, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {String(i)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectTrigger>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="floor"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Etage</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <FormControl>
+                      <SelectValue {...field} />
+                    </FormControl>
+                    <SelectContent>
+                      {Array.from({ length: 6 }).map((entry, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {String(i)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectTrigger>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormField
+          control={form.control}
+          name="others"
+          render={() => (
+            <FormItem>
+              <div className="mb-4">
+                <FormLabel className="text-base">Ausstattung</FormLabel>
+                <FormDescription>
+                  Weitere Ausstattung der Wohnung
+                </FormDescription>
+              </div>
+              <div className="flex items-center gap-4">
+                {others.map((item) => (
+                  <FormField
+                    key={item.id}
+                    control={form.control}
+                    name="others"
+                    render={({ field }) => {
+                      return (
+                        <FormItem
+                          key={item.id}
+                          className="flex flex-row items-start space-x-3 space-y-0"
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(item.id)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...field.value, item.id])
+                                  : field.onChange(
+                                      field.value?.filter(
+                                        (value) => value !== item.id,
+                                      ),
+                                    );
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            {item.label}
+                          </FormLabel>
+                        </FormItem>
+                      );
+                    }}
+                  />
+                ))}
+              </div>
+              <FormMessage />
+            </FormItem>
           )}
-          <div className="grid grid-cols-2 gap-2">
-            <FormField
-              name="coldRent"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Kaltmiete</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="number" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="utilityRent"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Warmmiete</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="number" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <Button type="submit">Speichern</Button>
-        </form>
-      </Form>
-    </div>
+        />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            name="coldRent"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Kaltmiete</FormLabel>
+                <FormControl>
+                  <Input {...field} type="number" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="utilityRent"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Kaltmiete</FormLabel>
+                <FormControl>
+                  <Input {...field} type="number" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="parkingRent"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Parkplatzmiete</FormLabel>
+                <FormControl>
+                  <Input {...field} type="number" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="cellarRent"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Kellermiete</FormLabel>
+                <FormControl>
+                  <Input {...field} type="number" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormField
+          name="description"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Beschreibung</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" className="w-fit">
+          Speichern
+        </Button>
+      </form>
+    </Form>
   );
 }

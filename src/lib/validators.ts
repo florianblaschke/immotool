@@ -22,16 +22,24 @@ export type NewPropertyType = z.infer<typeof newPropertySchema>;
 const PropertyEnum = newPropertySchema.keyof();
 export type NewPropertyTypeKeys = z.infer<typeof PropertyEnum>;
 
-export const flatSchema = z.object({
+export const unitSchema = z.object({
   id: z.coerce.number(),
   size: z.coerce.number(),
   type: z.enum(["commercial", "normal"]),
-  activeTenant: z.coerce.number().optional().nullable(),
   coldRent: z.coerce.number(),
   utilityRent: z.coerce.number(),
+  parkingRent: z.coerce.number().optional(),
+  cellarRent: z.coerce.number().optional(),
+  livingRooms: z.string().optional(),
+  kitchens: z.string().optional(),
+  bedRooms: z.string().optional(),
+  baths: z.string().optional(),
+  floor: z.string().optional(),
+  description: z.string().optional(),
+  others: z.array(z.string()),
 });
 
-export type FlatType = z.infer<typeof flatSchema>;
+export type FlatType = z.infer<typeof unitSchema>;
 
 export const tenantSchema = z.object({
   firstName: z.string().min(1),

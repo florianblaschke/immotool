@@ -89,7 +89,7 @@ function Dashboard() {
                 <CardDescription>Kontaktdaten der Mieter</CardDescription>
               </div>
               <Button asChild size="sm" className="ml-auto gap-1">
-                <Link href="/tenants">
+                <Link href="/admin/tenants">
                   Zeig alle
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>

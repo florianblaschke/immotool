@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { firstLetterToUpperCase } from "@/lib/utils";
+import { cn, firstLetterToUpperCase } from "@/lib/utils";
 import { getTenantById } from "@/server/tenants";
 import { notFound } from "next/navigation";
 
@@ -62,7 +62,12 @@ export default async function TenantProfilePage({
                         <div className="text-muted-foreground">
                           Vertrags-ID {contract.id}
                         </div>
-                        <div className="text-sm font-medium">
+                        <div
+                          className={cn(
+                            "text-sm font-medium",
+                            contract.movedOut && "text-red-500",
+                          )}
+                        >
                           {contract.movedOut ? "Inaktiv" : "Aktiv"}
                         </div>
                       </div>

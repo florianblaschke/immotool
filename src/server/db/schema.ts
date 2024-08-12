@@ -8,9 +8,9 @@ import {
   primaryKey,
   real,
   serial,
-  text,
   timestamp,
   varchar,
+  text,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 
@@ -173,7 +173,7 @@ export const tenantsRelation = relations(tenants, ({ many }) => ({
   rentContract: many(rentContract),
 }));
 
-export const rentContract = createTable("rentTime", {
+export const rentContract = createTable("rentContract", {
   id: serial("id").primaryKey(),
   coldRent: integer("coldRent").notNull(),
   utilityRent: integer("utilityRent").notNull(),
@@ -197,6 +197,17 @@ export const unit = createTable("unit", {
   type: flatTypeEnum("type").notNull(),
   size: real("size"),
   number: integer("number").notNull(),
+  coldRent: integer("coldRent"),
+  utilityRent: integer("utilityRent"),
+  parkingRent: integer("parkingRent"),
+  cellarRent: integer("cellarRent"),
+  others: text("others").array().default([]),
+  bedRooms: varchar("bedRooms").default("0"),
+  baths: varchar("baths").default("0"),
+  floor: varchar("floor").default("0"),
+  kitchens: varchar("kitchens").default("0"),
+  livingRooms: varchar("livingRooms").default("0"),
+  description: text("description").default(""),
   propertyId: integer("propertyId")
     .references(() => property.id, { onDelete: "cascade" })
     .notNull(),
@@ -220,5 +231,5 @@ export const unitRelation = relations(unit, ({ one, many }) => ({
 export type Property = Omit<InferInsertModel<typeof property>, "id"> & {
   id: number;
 };
-export type Flat = InferInsertModel<typeof unit>;
+export type Unit = InferInsertModel<typeof unit>;
 export type Tenant = InferInsertModel<typeof tenants>;
