@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { ZodError, type z } from "zod";
 import { getServerAuthSession } from "../auth";
 import { db } from "../db";
-import { property, unit, type Flat } from "../db/schema";
+import { property, unit, type Unit } from "../db/schema";
 
 export default async function createProperty(
   data: z.infer<typeof newPropertySchema>,
@@ -41,7 +41,7 @@ export default async function createProperty(
       propertyId = newProperty.id;
 
       if (validData.commercial > 0) {
-        const commercialunit: Flat[] = Array.from({
+        const commercialunit: Unit[] = Array.from({
           length: newProperty.commercial,
         }).map((_, i) => ({
           type: "commercial",
@@ -52,7 +52,7 @@ export default async function createProperty(
         await tx.insert(unit).values(commercialunit);
       }
       if (validData.units > 0) {
-        const normalunit: Flat[] = Array.from({
+        const normalunit: Unit[] = Array.from({
           length: newProperty.units,
         }).map((_, i) => ({
           propertyId: newProperty.id,

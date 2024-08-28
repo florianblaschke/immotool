@@ -16,10 +16,10 @@ export default async function updateUnit(data: z.infer<typeof unitSchema>) {
     if (!valid.success)
       throw new Error("Bitte stelle korrekte Daten zur Verfügung.");
 
-    const flatToUpdate = await db.query.unit.findFirst({
+    const unitToUpdate = await db.query.unit.findFirst({
       where: (unit, { eq }) => eq(unit.id, valid.data.id),
     });
-    if (!flatToUpdate) throw new Error("Die Einheit wurde nicht gefunden");
+    if (!unitToUpdate) throw new Error("Die Einheit wurde nicht gefunden");
 
     const {
       coldRent,
@@ -46,7 +46,7 @@ export default async function updateUnit(data: z.infer<typeof unitSchema>) {
         floor,
         description,
         coldRent,
-        number: flatToUpdate.number,
+        number: unitToUpdate.number,
         kitchens,
         livingRooms,
         others,

@@ -215,6 +215,24 @@ export const unit = createTable("unit", {
   activeRentDetailsId: integer("activeRentDetailsId"),
 });
 
+export const invoice = createTable("invoice", {
+  id: serial("id").primaryKey(),
+  date: date("date").notNull(),
+  fromDate: date("fromDate").notNull(),
+  toDate: date("toDate").notNull(),
+  waste: integer("waste"),
+  water: integer("water"),
+  basicFee: integer("basicFee"),
+  sewage: integer("sewage"),
+});
+
+export const costs = createTable("costs", {
+  id: serial("id").primaryKey(),
+  type: varchar("type").notNull(),
+  value: integer("value").notNull(),
+  invoiceId: integer("invoiceId").notNull(),
+});
+
 export const unitRelation = relations(unit, ({ one, many }) => ({
   property: one(property, {
     fields: [unit.propertyId],

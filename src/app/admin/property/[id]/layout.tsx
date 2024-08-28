@@ -18,7 +18,7 @@ export default async function SettingsLayout({
       href: `/admin/property/${params.id}`,
     },
     {
-      title: "Grundbesitzabgaben",
+      title: "Abrechnungen",
       href: `/admin/property/${params.id}/expenses`,
     },
     {
